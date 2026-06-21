@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  ::selection {
+    background-color: theme("colors.accent.DEFAULT");
+    color: theme("colors.canvas.DEFAULT");
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: theme("colors.canvas.DEFAULT");
+  }
+
+  :focus-visible {
+    outline: 2px solid theme("colors.accent.bright");
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  h1, h2, h3, h4 {
+    font-family: theme("fontFamily.display");
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-content px-6 sm:px-8 lg:px-10;
+  }
+
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.18em] text-accent-bright;
+  }
+
+  .divider {
+    @apply h-px w-full bg-border;
+  }
+}
+
+.markdown-body {
+  @apply prose prose-invert max-w-none prose-headings:font-display prose-a:text-accent-bright prose-code:font-mono prose-code:text-accent-bright prose-code:before:content-none prose-code:after:content-none prose-pre:bg-canvas-inset prose-pre:border prose-pre:border-border;
+}

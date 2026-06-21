@@ -1,0 +1,1237 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: node_modules
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+content/
+  projects/
+    joy-agency.md
+    soko-platform.md
+    taskr.md
+public/
+  robots.txt
+  sitemap.xml
+src/
+  components/
+    AppFooter.vue
+    AppHeader.vue
+    BaseButton.vue
+    BaseCard.vue
+    MarkdownRenderer.vue
+    MobileMenu.vue
+    ProjectCard.vue
+    ProjectGrid.vue
+    TechBadge.vue
+  composables/
+    useMobileMenu.ts
+  content/
+    projects.ts
+  router/
+    index.ts
+  types/
+    project.ts
+  views/
+    AboutView.vue
+    ContactView.vue
+    HomeView.vue
+    NotFoundView.vue
+    ProjectDetailView.vue
+    ProjectsView.vue
+  App.vue
+  main.ts
+  style.css
+index.html
+package.json
+postcss.config.js
+tailwind.config.ts
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="content/projects/joy-agency.md">
+---
+title: "Joy Agency"
+slug: "joy-agency"
+summary: "A domestic staffing platform with a full admin dashboard, built on Vue 3, Express, and MongoDB."
+categories: ["Full Stack", "SaaS"]
+techStack: ["Vue 3", "Express", "MongoDB", "Cloudinary"]
+architectureHighlights: ["Admin dashboard", "Unsigned image uploads", "Dark mode theming"]
+githubUrl: ""
+demoUrl: ""
+featured: true
+order: 2
+---
+
+## Overview
+
+Joy Agency is a platform for a domestic staffing business, covering both the
+public-facing site and a full internal admin dashboard for managing staff
+listings and client interactions.
+
+## Problem
+
+The agency needed a way to list available staff with photos, manage listings
+without touching code, and present a professional public face — while keeping
+the admin side simple enough to actually use day-to-day.
+
+## Solution
+
+A Vue 3 frontend backed by an Express/MongoDB API, with Cloudinary handling
+photo uploads directly from the browser via unsigned upload presets — no
+server-side upload handling needed, which kept the backend simpler.
+
+## Architecture
+
+- **Unsigned Cloudinary uploads.** Photos go straight from the client to
+  Cloudinary using an unsigned upload preset, avoiding the need to proxy
+  large file uploads through the API server.
+- **Full admin dashboard.** Built out over several iterations to support
+  listing management, with dark mode theming applied consistently across
+  both public and admin views.
+- **CORS and deployment hardening.** Working through cross-origin issues
+  between the Vue frontend and Express API in production surfaced several
+  configuration details that don't show up in local development.
+
+## Technical Challenges
+
+Getting Cloudinary's unsigned upload flow right — and debugging CORS once
+the frontend and backend were deployed separately — took more iteration than
+expected. Local dev hides a lot of cross-origin behavior that only appears
+once both pieces are actually deployed.
+
+## Lessons Learned
+
+Offloading file storage entirely to a third-party service (rather than
+handling uploads through the API) simplified the backend considerably. It's
+a pattern worth defaulting to unless there's a specific reason to proxy
+uploads through your own server.
+
+## Stack
+
+Vue 3 · Express · MongoDB · Cloudinary
+</file>
+
+<file path="content/projects/soko-platform.md">
+---
+title: "Soko Platform"
+slug: "soko-platform"
+summary: "A multi-tenant SaaS API for East African commerce, starting with fresh produce traders at Wakulima Market."
+categories: ["SaaS", "Backend"]
+techStack: ["TypeScript", "Express", "PostgreSQL", "Neon", "Render"]
+architectureHighlights: ["Multi-tenancy", "Branded ID types", "ORM-free SQL", "Migrations"]
+githubUrl: ""
+demoUrl: ""
+featured: true
+order: 1
+---
+
+## Overview
+
+Soko is a multi-tenant SaaS API built for East African commerce, with the
+first target market being fresh produce traders at Wakulima Market in
+Nairobi. I worked there as a market porter, which is where the idea — and
+the conviction that the problem is real — came from.
+
+## Problem
+
+Small traders at markets like Wakulima run on cash, memory, and paper. There's
+no shared system for tracking inventory, orders, or basic sales records across
+multiple traders or stalls, and most off-the-shelf SaaS tools assume a single
+business owner rather than many independent tenants sharing infrastructure.
+
+## Solution
+
+A multi-tenant API where each trader's data is strictly isolated by
+organization, but the underlying infrastructure — database, auth, deployment —
+is shared. Built with strict-mode TypeScript throughout and branded types
+(`OrgId`, `UserId`) so tenant-scoping mistakes get caught at compile time
+rather than discovered in production.
+
+## Architecture
+
+- **No ORM, by design.** All database access goes through the raw `pg`
+  driver with hand-written SQL. This keeps every query's actual behavior
+  visible — no hidden N+1s, no abstraction hiding what's really being sent
+  to PostgreSQL.
+- **Branded types for tenant isolation.** `OrgId` and `UserId` are distinct
+  types at the TypeScript level, not just `string` aliases, so a function
+  expecting one can't silently accept the other.
+- **Migrations as the source of truth.** Schema changes go through versioned
+  PostgreSQL migrations rather than being inferred from model definitions.
+
+## Technical Challenges
+
+Designing tenant isolation that's enforced structurally rather than just by
+convention was the central challenge — it's easy to add a `WHERE org_id = ?`
+clause everywhere, and just as easy to forget it once. Branded types push
+that check earlier, into the type system, without needing a row-level
+security layer for the current stage of the project.
+
+## Lessons Learned
+
+Committing to "no ORM" early forced a clearer mental model of what the
+database is actually doing on every request — useful discipline, even though
+it means writing more SQL by hand. The tradeoff has been worth it for a
+system where correctness of tenant boundaries matters more than development
+speed.
+
+## Stack
+
+TypeScript · Express · PostgreSQL (raw `pg`) · Neon · Render
+</file>
+
+<file path="content/projects/taskr.md">
+---
+title: "Taskr"
+slug: "taskr"
+summary: "A MEVN-stack task management app, taken from course project to deployed portfolio piece."
+categories: ["Full Stack"]
+techStack: ["Vue 3", "Express", "MongoDB", "Node.js"]
+architectureHighlights: ["MEVN stack", "Deployed on Render & Vercel"]
+githubUrl: "https://github.com/Vig-Monk/express-api-fundamentals"
+demoUrl: ""
+featured: false
+order: 3
+---
+
+## Overview
+
+Taskr is a task management application built on the MEVN stack (MongoDB,
+Express, Vue 3, Node.js). It started as a structured course project and was
+taken further — deployed and polished into a genuine portfolio piece rather
+than left as a tutorial exercise.
+
+## Problem
+
+Most course projects stop at "it runs locally." The goal with Taskr was to
+push past that: a real deployed app, with the API on Render and the frontend
+on Vercel, talking to each other in production rather than just on localhost.
+
+## Solution
+
+A standard MEVN task manager — create, update, complete, and organize
+tasks — used deliberately as a vehicle for learning fullstack fundamentals
+end-to-end, from API design through to a live deployment.
+
+## Architecture
+
+A straightforward REST API over Express and MongoDB, paired with a Vue 3
+frontend. The interesting part wasn't novel architecture — it was closing
+the loop on deployment: environment variables, CORS, build configuration,
+and the small mismatches between local and production environments that
+only show up once you actually ship.
+
+## Lessons Learned
+
+This project marked the shift from "tutorial-following" to "fullstack
+fundamentals I actually understand." The deployment process in particular —
+getting a separately-hosted frontend and backend to work together in
+production — was where most of the real learning happened, more so than the
+CRUD logic itself.
+
+## Stack
+
+Vue 3 · Express · MongoDB · Node.js · Render · Vercel
+
+GitHub: [express-api-fundamentals](https://github.com/Vig-Monk/express-api-fundamentals)
+</file>
+
+<file path="public/robots.txt">
+User-agent: *
+Allow: /
+
+Sitemap: https://vig-monk.dev/sitemap.xml
+</file>
+
+<file path="public/sitemap.xml">
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://vig-monk.dev/</loc><priority>1.0</priority></url>
+  <url><loc>https://vig-monk.dev/about</loc><priority>0.8</priority></url>
+  <url><loc>https://vig-monk.dev/projects</loc><priority>0.9</priority></url>
+  <url><loc>https://vig-monk.dev/contact</loc><priority>0.7</priority></url>
+</urlset>
+</file>
+
+<file path="src/components/AppFooter.vue">
+<script setup lang="ts">
+const year = new Date().getFullYear();
+</script>
+
+<template>
+  <footer class="border-t border-border">
+    <div class="container-page flex flex-col items-center justify-between gap-4 py-10 sm:flex-row">
+      <p class="font-mono text-sm text-ink-muted">&copy; {{ year }} Lu. Built with Vue 3 &amp; TypeScript.</p>
+      <div class="flex gap-6 text-sm text-ink-muted">
+        <a href="https://github.com/Vig-Monk" target="_blank" rel="noopener noreferrer" class="hover:text-ink">GitHub</a>
+        <RouterLink to="/contact" class="hover:text-ink">Contact</RouterLink>
+      </div>
+    </div>
+  </footer>
+</template>
+</file>
+
+<file path="src/components/AppHeader.vue">
+<script setup lang="ts">
+import { useMobileMenu } from "@/composables/useMobileMenu";
+
+const { isOpen, toggle } = useMobileMenu();
+
+const navItems = [
+  { to: "/", label: "Home" },
+  { to: "/projects", label: "Projects" },
+  { to: "/about", label: "About" }
+];
+</script>
+
+<template>
+  <header class="sticky top-0 z-40 border-b border-border bg-canvas/85 backdrop-blur-md">
+    <nav class="container-page flex h-16 items-center justify-between" aria-label="Primary">
+      <RouterLink to="/" class="font-mono text-sm text-ink" aria-label="Lu — home">
+        lu<span class="text-accent-bright">.</span>dev
+      </RouterLink>
+
+      <div class="hidden items-center gap-8 md:flex">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="text-sm text-ink-muted transition-colors hover:text-ink"
+          active-class="text-ink"
+        >
+          {{ item.label }}
+        </RouterLink>
+      </div>
+
+      <RouterLink
+        to="/contact"
+        class="hidden rounded-lg border border-border px-4 py-2 text-sm text-ink transition-colors hover:border-accent-dim hover:text-accent-bright md:block"
+      >
+        Contact
+      </RouterLink>
+
+      <button
+        type="button"
+        aria-label="Open menu"
+        :aria-pressed="isOpen"
+        class="flex h-10 w-10 items-center justify-center text-ink-muted md:hidden"
+        @click="toggle"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round" />
+        </svg>
+      </button>
+    </nav>
+  </header>
+</template>
+</file>
+
+<file path="src/components/BaseButton.vue">
+<script setup lang="ts">
+import { computed } from "vue";
+
+interface Props {
+  variant?: "primary" | "secondary";
+  to?: string;
+  href?: string;
+  type?: "button" | "submit";
+}
+
+const props = withDefaults(defineProps<Props>(), { variant: "primary", type: "button" });
+
+const tag = computed(() => (props.to ? "router-link" : props.href ? "a" : "button"));
+
+const variantClasses = computed(() =>
+  props.variant === "primary"
+    ? "bg-accent text-canvas hover:bg-accent-bright"
+    : "bg-transparent border border-border text-ink hover:border-accent-dim hover:text-accent-bright"
+);
+</script>
+
+<template>
+  <component
+    :is="tag"
+    :to="to"
+    :href="href"
+    :type="!to && !href ? type : undefined"
+    class="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200"
+    :class="variantClasses"
+  >
+    <slot />
+  </component>
+</template>
+</file>
+
+<file path="src/components/BaseCard.vue">
+<script setup lang="ts">
+withDefaults(defineProps<{ hoverable?: boolean }>(), { hoverable: true });
+</script>
+
+<template>
+  <div
+    class="rounded-xl border border-border bg-canvas-raised p-6 transition-all duration-300"
+    :class="hoverable ? 'hover:-translate-y-0.5 hover:border-accent-dim' : ''"
+  >
+    <slot />
+  </div>
+</template>
+</file>
+
+<file path="src/components/MarkdownRenderer.vue">
+<script setup lang="ts">
+import { computed } from "vue";
+import MarkdownIt from "markdown-it";
+
+const props = defineProps<{ source: string }>();
+
+const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
+const html = computed(() => md.render(props.source));
+</script>
+
+<template>
+  <div class="markdown-body" v-html="html" />
+</template>
+</file>
+
+<file path="src/components/MobileMenu.vue">
+<script setup lang="ts">
+import { useMobileMenu } from "@/composables/useMobileMenu";
+
+const { isOpen, close } = useMobileMenu();
+
+const navItems = [
+  { to: "/", label: "Home" },
+  { to: "/projects", label: "Projects" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" }
+];
+</script>
+
+<template>
+  <div v-if="isOpen" class="fixed inset-0 z-50 bg-canvas-inset/80 md:hidden" @click="close" />
+
+  <nav
+    v-if="isOpen"
+    class="fixed right-0 top-0 z-50 h-full w-[78%] max-w-xs border-l border-border bg-canvas-raised p-6 md:hidden"
+    aria-label="Mobile"
+  >
+    <button type="button" aria-label="Close menu" class="mb-8 block text-ink-muted" @click="close">
+      ✕
+    </button>
+    <ul class="flex flex-col gap-1">
+      <li v-for="item in navItems" :key="item.to">
+        <RouterLink
+          :to="item.to"
+          class="block rounded-lg px-3 py-3 text-base text-ink hover:bg-canvas-inset hover:text-accent-bright"
+          @click="close"
+        >
+          {{ item.label }}
+        </RouterLink>
+      </li>
+    </ul>
+  </nav>
+</template>
+</file>
+
+<file path="src/components/ProjectCard.vue">
+<script setup lang="ts">
+import BaseCard from "@/components/BaseCard.vue";
+import TechBadge from "@/components/TechBadge.vue";
+import type { ProjectFrontmatter } from "@/types/project";
+
+defineProps<{ project: ProjectFrontmatter }>();
+</script>
+
+<template>
+  <RouterLink :to="`/projects/${project.slug}`" class="block">
+    <BaseCard>
+      <p class="eyebrow mb-2">{{ project.categories.join(" · ") }}</p>
+      <h3 class="mb-2 text-lg font-semibold text-ink">{{ project.title }}</h3>
+      <p class="mb-4 text-sm text-ink-muted">{{ project.summary }}</p>
+      <div class="flex flex-wrap gap-2">
+        <TechBadge v-for="tech in project.techStack" :key="tech" :label="tech" />
+      </div>
+    </BaseCard>
+  </RouterLink>
+</template>
+</file>
+
+<file path="src/components/ProjectGrid.vue">
+<script setup lang="ts">
+import ProjectCard from "@/components/ProjectCard.vue";
+import type { ProjectFrontmatter } from "@/types/project";
+
+defineProps<{ projects: ProjectFrontmatter[] }>();
+</script>
+
+<template>
+  <div class="grid gap-6 sm:grid-cols-2">
+    <ProjectCard v-for="project in projects" :key="project.slug" :project="project" />
+  </div>
+</template>
+</file>
+
+<file path="src/components/TechBadge.vue">
+<script setup lang="ts">
+defineProps<{ label: string }>();
+</script>
+
+<template>
+  <span class="inline-flex items-center rounded-md border border-border bg-canvas-inset px-2.5 py-1 font-mono text-xs text-ink-muted">
+    {{ label }}
+  </span>
+</template>
+</file>
+
+<file path="src/composables/useMobileMenu.ts">
+import { ref } from "vue";
+
+// Module-level state, shared by every component that imports this —
+// the simplest possible substitute for a Pinia store when you only
+// have one small piece of cross-cutting UI state.
+const isOpen = ref(false);
+
+export function useMobileMenu() {
+  function open() {
+    isOpen.value = true;
+    document.body.style.overflow = "hidden";
+  }
+  function close() {
+    isOpen.value = false;
+    document.body.style.overflow = "";
+  }
+  function toggle() {
+    isOpen.value ? close() : open();
+  }
+  return { isOpen, open, close, toggle };
+}
+</file>
+
+<file path="src/content/projects.ts">
+import matter from "gray-matter";
+import type { ProjectEntry, ProjectFrontmatter } from "@/types/project";
+
+// import.meta.glob discovers every .md file under content/projects at build
+// time — add a new file later and it appears automatically, no component
+// edits needed. This single function is the entire "CMS".
+const modules = import.meta.glob("@content/projects/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true
+}) as Record<string, string>;
+
+export const projects: ProjectEntry[] = Object.values(modules)
+  .map((raw) => {
+    const { data, content } = matter(raw);
+    return { frontmatter: data as ProjectFrontmatter, content };
+  })
+  .sort((a, b) => (a.frontmatter.order ?? 99) - (b.frontmatter.order ?? 99));
+
+export function getProjectBySlug(slug: string): ProjectEntry | undefined {
+  return projects.find((p) => p.frontmatter.slug === slug);
+}
+
+export const featuredProjects = projects.filter((p) => p.frontmatter.featured);
+</file>
+
+<file path="src/router/index.ts">
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
+
+const routes: RouteRecordRaw[] = [
+  { path: "/", name: "home", component: () => import("@/views/HomeView.vue") },
+  { path: "/about", name: "about", component: () => import("@/views/AboutView.vue") },
+  { path: "/projects", name: "projects", component: () => import("@/views/ProjectsView.vue") },
+  {
+    path: "/projects/:slug",
+    name: "project-detail",
+    component: () => import("@/views/ProjectDetailView.vue"),
+    props: true
+  },
+  { path: "/contact", name: "contact", component: () => import("@/views/ContactView.vue") },
+  { path: "/:pathMatch(.*)*", name: "not-found", component: () => import("@/views/NotFoundView.vue") }
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, _from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    return { top: 0 };
+  }
+});
+
+export default router;
+</file>
+
+<file path="src/types/project.ts">
+export type ProjectCategory = "SaaS" | "Backend" | "Full Stack";
+
+export interface ProjectFrontmatter {
+  title: string;
+  slug: string;
+  summary: string;
+  categories: ProjectCategory[];
+  techStack: string[];
+  architectureHighlights: string[];
+  githubUrl?: string;
+  demoUrl?: string;
+  featured?: boolean;
+  order?: number;
+}
+
+export interface ProjectEntry {
+  frontmatter: ProjectFrontmatter;
+  content: string;
+}
+</file>
+
+<file path="src/views/AboutView.vue">
+<script setup lang="ts">
+import { onMounted } from "vue";
+import BaseCard from "@/components/BaseCard.vue";
+
+onMounted(() => {
+  document.title = "About — Lu";
+});
+
+const principles = [
+  { title: "Correctness before speed", body: "Constraints, types, and migrations come first. Performance work happens once the schema can be trusted." },
+  { title: "No ORM, on purpose", body: "Raw pg and hand-written SQL keep query behavior visible and debuggable — no hidden N+1s from an abstraction layer." },
+  { title: "Multi-tenancy from day one", body: "Branded ID types (OrgId, UserId) make tenant isolation a compile-time concern, not a runtime hope." }
+];
+
+const architectureTopics = [
+  "JWT auth with refresh token rotation",
+  "Role-based access control (RBAC)",
+  "Multi-tenant schema isolation",
+  "PostgreSQL indexing strategy",
+  "Caching and queue processing patterns"
+];
+</script>
+
+<template>
+  <section class="container-page py-20">
+    <p class="eyebrow mb-3">About</p>
+    <h1 class="mb-8 text-display-lg font-display font-semibold text-ink">My Story</h1>
+
+    <div class="markdown-body mb-16 max-w-2xl">
+      <p>
+        I'm a self-taught fullstack developer based in Nairobi, building toward
+        freelance work for East African SMEs. My background is in forex and
+        futures trading, which is where the technical-analysis habit of mind
+        came from — reading systems for risk before reading them for features.
+      </p>
+      <p>
+        I develop entirely on Android, using Termux and Acode. That constraint
+        has shaped how I build: lean toolchains, explicit code over heavy
+        abstractions, and a strong bias toward understanding exactly what's
+        running rather than trusting a framework to hide it from me.
+      </p>
+      <p>
+        Before this, I worked as a market porter at Wakulima Market in Nairobi —
+        which is part of why East African commerce and the M-Pesa / Daraja API
+        ecosystem are a focus rather than an afterthought. I've seen the target
+        market from the inside.
+      </p>
+    </div>
+
+    <h2 class="mb-6 text-2xl font-semibold text-ink">Engineering Principles</h2>
+    <div class="mb-16 grid gap-5 sm:grid-cols-3">
+      <BaseCard v-for="item in principles" :key="item.title" :hoverable="false">
+        <h3 class="mb-2 font-semibold text-ink">{{ item.title }}</h3>
+        <p class="text-sm text-ink-muted">{{ item.body }}</p>
+      </BaseCard>
+    </div>
+
+    <h2 class="mb-6 text-2xl font-semibold text-ink">Systems I Design For</h2>
+    <ul class="mb-16 grid gap-3 sm:grid-cols-2">
+      <li
+        v-for="topic in architectureTopics"
+        :key="topic"
+        class="rounded-lg border border-border bg-canvas-raised px-4 py-3 text-sm text-ink-muted"
+      >
+        {{ topic }}
+      </li>
+    </ul>
+
+    <h2 class="mb-6 text-2xl font-semibold text-ink">Stack</h2>
+    <p class="max-w-2xl text-ink-muted">
+      TypeScript, Node.js, Express, PostgreSQL (raw <code class="font-mono text-accent-bright">pg</code>,
+      no ORM, by design), Vue 3, Neon, deployed to Render and Vercel.
+    </p>
+  </section>
+</template>
+</file>
+
+<file path="src/views/ContactView.vue">
+<script setup lang="ts">
+import { onMounted, reactive } from "vue";
+import BaseButton from "@/components/BaseButton.vue";
+
+onMounted(() => {
+  document.title = "Contact — Lu";
+});
+
+const form = reactive({ name: "", email: "", message: "" });
+const submitted = ref(false);
+
+function handleSubmit() {
+  // UI only — wire this to an endpoint (Formspree, your own API, etc.) later.
+  submitted.value = true;
+}
+</script>
+
+<script lang="ts">
+import { ref } from "vue";
+</script>
+
+<template>
+  <section class="container-page py-20">
+    <p class="eyebrow mb-3">Contact</p>
+    <h1 class="mb-6 text-display-lg font-display font-semibold text-ink">Let's talk.</h1>
+
+    <div class="mb-12 flex flex-wrap items-center gap-3">
+      <span class="inline-flex items-center gap-2 rounded-full border border-accent-dim bg-accent/10 px-3 py-1 text-sm text-accent-bright">
+        <span class="h-2 w-2 rounded-full bg-accent-bright"></span>
+        Available for freelance work
+      </span>
+      <span class="text-sm text-ink-muted">Usually responds within 1–2 days</span>
+    </div>
+
+    <div class="grid gap-12 sm:grid-cols-2">
+      <div>
+        <h2 class="mb-4 text-lg font-semibold text-ink">Reach me directly</h2>
+        <ul class="space-y-3 text-sm">
+          <li><a href="mailto:hello@vig-monk.dev" class="text-ink-muted hover:text-ink">hello@vig-monk.dev</a></li>
+          <li><a href="https://github.com/Vig-Monk" target="_blank" rel="noopener noreferrer" class="text-ink-muted hover:text-ink">github.com/Vig-Monk</a></li>
+        </ul>
+      </div>
+
+      <form v-if="!submitted" class="space-y-4" @submit.prevent="handleSubmit">
+        <div>
+          <label for="name" class="mb-1.5 block text-sm text-ink-muted">Name</label>
+          <input
+            id="name"
+            v-model="form.name"
+            type="text"
+            required
+            class="w-full rounded-lg border border-border bg-canvas-raised px-4 py-2.5 text-sm text-ink focus:border-accent-dim"
+          />
+        </div>
+        <div>
+          <label for="email" class="mb-1.5 block text-sm text-ink-muted">Email</label>
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            required
+            class="w-full rounded-lg border border-border bg-canvas-raised px-4 py-2.5 text-sm text-ink focus:border-accent-dim"
+          />
+        </div>
+        <div>
+          <label for="message" class="mb-1.5 block text-sm text-ink-muted">Message</label>
+          <textarea
+            id="message"
+            v-model="form.message"
+            rows="4"
+            required
+            class="w-full rounded-lg border border-border bg-canvas-raised px-4 py-2.5 text-sm text-ink focus:border-accent-dim"
+          />
+        </div>
+        <BaseButton type="submit">Send Message</BaseButton>
+      </form>
+
+      <p v-else class="text-ink-muted">
+        Thanks — this form isn't wired to a backend yet, so nothing was actually sent.
+        Use the email link instead until that's connected.
+      </p>
+    </div>
+  </section>
+</template>
+</file>
+
+<file path="src/views/HomeView.vue">
+<script setup lang="ts">
+import { onMounted } from "vue";
+import BaseButton from "@/components/BaseButton.vue";
+import BaseCard from "@/components/BaseCard.vue";
+import ProjectGrid from "@/components/ProjectGrid.vue";
+import { featuredProjects } from "@/content/projects";
+
+onMounted(() => {
+  document.title = "Lu — Backend & Systems Engineer";
+});
+
+const whatIDo = [
+  { title: "SaaS Development", body: "End-to-end multi-tenant platforms, from schema to deployed API." },
+  { title: "API Design", body: "REST APIs with clear contracts, versioning, and auth that holds up under real traffic." },
+  { title: "Database Architecture", body: "PostgreSQL schemas designed for correctness first, then speed — indexes, constraints, migrations." },
+  { title: "System Design", body: "Auth flows, RBAC, multi-tenancy boundaries — the parts that are expensive to get wrong later." }
+];
+</script>
+
+<template>
+  <section class="container-page py-24 sm:py-32">
+    <p class="eyebrow mb-5">Backend & Systems Engineer</p>
+    <h1 class="max-w-3xl text-display-lg font-display font-semibold text-ink sm:text-display-xl">
+      Designing APIs, databases, and systems that scale.
+    </h1>
+    <p class="mt-6 max-w-xl text-lg text-ink-muted">
+      Helping businesses build reliable software through thoughtful architecture,
+      scalable backend systems, and modern SaaS development.
+    </p>
+    <div class="mt-10 flex flex-wrap gap-4">
+      <BaseButton to="/projects">View Projects</BaseButton>
+      <BaseButton to="/about" variant="secondary">More About My Approach</BaseButton>
+    </div>
+  </section>
+
+  <div class="divider" />
+
+  <section class="container-page py-20">
+    <h2 class="mb-10 text-2xl font-semibold text-ink">What I Do</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <BaseCard v-for="item in whatIDo" :key="item.title" :hoverable="false">
+        <h3 class="mb-2 font-semibold text-ink">{{ item.title }}</h3>
+        <p class="text-sm text-ink-muted">{{ item.body }}</p>
+      </BaseCard>
+    </div>
+  </section>
+
+  <div class="divider" />
+
+  <section class="container-page py-20">
+    <h2 class="mb-10 text-2xl font-semibold text-ink">Featured Projects</h2>
+    <ProjectGrid :projects="featuredProjects.map((p) => p.frontmatter)" />
+  </section>
+
+  <section class="container-page py-24 text-center">
+    <h2 class="mb-4 text-2xl font-semibold text-ink">Have a project in mind?</h2>
+    <p class="mb-8 text-ink-muted">I'm currently available for freelance backend and SaaS work.</p>
+    <BaseButton to="/contact">Get in Touch</BaseButton>
+  </section>
+</template>
+</file>
+
+<file path="src/views/NotFoundView.vue">
+<script setup lang="ts">
+import { onMounted } from "vue";
+import BaseButton from "@/components/BaseButton.vue";
+
+onMounted(() => {
+  document.title = "Page Not Found — Lu";
+});
+</script>
+
+<template>
+  <section class="container-page flex min-h-[60vh] flex-col items-center justify-center text-center">
+    <p class="eyebrow mb-3">404</p>
+    <h1 class="mb-4 text-2xl font-semibold text-ink">Page not found</h1>
+    <p class="mb-8 text-ink-muted">That route doesn't exist.</p>
+    <BaseButton to="/">Back Home</BaseButton>
+  </section>
+</template>
+</file>
+
+<file path="src/views/ProjectDetailView.vue">
+<script setup lang="ts">
+import { computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
+import TechBadge from "@/components/TechBadge.vue";
+import BaseButton from "@/components/BaseButton.vue";
+import { getProjectBySlug } from "@/content/projects";
+
+const props = defineProps<{ slug: string }>();
+const router = useRouter();
+const entry = computed(() => getProjectBySlug(props.slug));
+
+onMounted(() => {
+  if (!entry.value) {
+    router.replace({ name: "not-found" });
+    return;
+  }
+  document.title = `${entry.value.frontmatter.title} — Lu`;
+});
+</script>
+
+<template>
+  <article v-if="entry" class="container-page py-20">
+    <p class="eyebrow mb-3">{{ entry.frontmatter.categories.join(" · ") }}</p>
+    <h1 class="mb-4 text-display-lg font-display font-semibold text-ink">
+      {{ entry.frontmatter.title }}
+    </h1>
+    <p class="mb-6 max-w-2xl text-ink-muted">{{ entry.frontmatter.summary }}</p>
+
+    <div class="mb-8 flex flex-wrap gap-2">
+      <TechBadge v-for="tech in entry.frontmatter.techStack" :key="tech" :label="tech" />
+    </div>
+
+    <div class="mb-12 flex flex-wrap gap-3">
+      <BaseButton v-if="entry.frontmatter.githubUrl" :href="entry.frontmatter.githubUrl" variant="secondary">
+        View on GitHub
+      </BaseButton>
+      <BaseButton v-if="entry.frontmatter.demoUrl" :href="entry.frontmatter.demoUrl">
+        Live Demo
+      </BaseButton>
+    </div>
+
+    <div class="divider mb-12" />
+
+    <MarkdownRenderer :source="entry.content" />
+  </article>
+</template>
+</file>
+
+<file path="src/views/ProjectsView.vue">
+<script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+import ProjectGrid from "@/components/ProjectGrid.vue";
+import { projects } from "@/content/projects";
+import type { ProjectCategory } from "@/types/project";
+
+onMounted(() => {
+  document.title = "Projects — Lu";
+});
+
+const categories: ProjectCategory[] = ["SaaS", "Backend", "Full Stack"];
+const activeCategory = ref<ProjectCategory | "All">("All");
+
+const filtered = computed(() => {
+  if (activeCategory.value === "All") return projects.map((p) => p.frontmatter);
+  return projects
+    .filter((p) => p.frontmatter.categories.includes(activeCategory.value as ProjectCategory))
+    .map((p) => p.frontmatter);
+});
+</script>
+
+<template>
+  <section class="container-page py-20">
+    <p class="eyebrow mb-3">Work</p>
+    <h1 class="mb-8 text-display-lg font-display font-semibold text-ink">Projects</h1>
+
+    <div class="mb-10 flex flex-wrap gap-2">
+      <button
+        type="button"
+        class="rounded-lg border px-4 py-2 text-sm transition-colors"
+        :class="activeCategory === 'All' ? 'border-accent-dim text-accent-bright' : 'border-border text-ink-muted hover:text-ink'"
+        @click="activeCategory = 'All'"
+      >
+        All
+      </button>
+      <button
+        v-for="cat in categories"
+        :key="cat"
+        type="button"
+        class="rounded-lg border px-4 py-2 text-sm transition-colors"
+        :class="activeCategory === cat ? 'border-accent-dim text-accent-bright' : 'border-border text-ink-muted hover:text-ink'"
+        @click="activeCategory = cat"
+      >
+        {{ cat }}
+      </button>
+    </div>
+
+    <ProjectGrid :projects="filtered" />
+  </section>
+</template>
+</file>
+
+<file path="src/App.vue">
+<script setup lang="ts">
+import AppHeader from "@/components/AppHeader.vue";
+import AppFooter from "@/components/AppFooter.vue";
+import MobileMenu from "@/components/MobileMenu.vue";
+</script>
+
+<template>
+  <AppHeader />
+  <MobileMenu />
+  <main>
+    <RouterView />
+  </main>
+  <AppFooter />
+</template>
+</file>
+
+<file path="src/main.ts">
+import { createApp } from "vue";
+import router from "@/router";
+import App from "@/App.vue";
+import "@/style.css";
+
+createApp(App).use(router).mount("#app");
+</file>
+
+<file path="src/style.css">
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  ::selection {
+    background-color: theme("colors.accent.DEFAULT");
+    color: theme("colors.canvas.DEFAULT");
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: theme("colors.canvas.DEFAULT");
+  }
+
+  :focus-visible {
+    outline: 2px solid theme("colors.accent.bright");
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  h1, h2, h3, h4 {
+    font-family: theme("fontFamily.display");
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-content px-6 sm:px-8 lg:px-10;
+  }
+
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.18em] text-accent-bright;
+  }
+
+  .divider {
+    @apply h-px w-full bg-border;
+  }
+}
+
+.markdown-body {
+  @apply prose prose-invert max-w-none prose-headings:font-display prose-a:text-accent-bright prose-code:font-mono prose-code:text-accent-bright prose-code:before:content-none prose-code:after:content-none prose-pre:bg-canvas-inset prose-pre:border prose-pre:border-border;
+}
+</file>
+
+<file path="index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>Lu — Backend & Systems Engineer</title>
+    <meta
+      name="description"
+      content="Designing APIs, databases, and systems that scale. Backend and SaaS engineering for East African businesses."
+    />
+    <link rel="canonical" href="https://vig-monk.dev/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Lu — Backend & Systems Engineer" />
+    <meta property="og:description" content="Designing APIs, databases, and systems that scale." />
+    <meta property="og:image" content="/og-default.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-canvas text-ink font-body antialiased">
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+</file>
+
+<file path="package.json">
+{
+  "name": "vig-monk-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "markdown-it": "^14.1.0",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "@types/node": "^20.11.30",
+    "@types/markdown-it": "^14.0.1",
+    "typescript": "^5.4.3",
+    "vue-tsc": "^2.0.6",
+    "vite": "^5.2.6",
+    "tailwindcss": "^3.4.3",
+    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.19",
+    "@tailwindcss/typography": "^0.5.13"
+  }
+}
+</file>
+
+<file path="postcss.config.js">
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+};
+</file>
+
+<file path="tailwind.config.ts">
+import type { Config } from "tailwindcss";
+
+export default {
+  darkMode: "class",
+  content: ["./index.html", "./src/**/*.{vue,ts}"],
+  theme: {
+    extend: {
+      colors: {
+        canvas: { DEFAULT: "#0A0E0C", raised: "#0F1510", inset: "#070A08" },
+        border: { DEFAULT: "#1A2420", subtle: "#141A17" },
+        ink: { DEFAULT: "#E8ECE9", muted: "#7A8A82", faint: "#4D5A53" },
+        accent: { DEFAULT: "#0D9D6F", dim: "#0A7A57", bright: "#14C088" }
+      },
+      fontFamily: {
+        display: ["Inter Tight", "Inter", "system-ui", "sans-serif"],
+        body: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"]
+      },
+      fontSize: {
+        "display-xl": ["4rem", { lineHeight: "1.04", letterSpacing: "-0.02em" }],
+        "display-lg": ["2.75rem", { lineHeight: "1.08", letterSpacing: "-0.01em" }]
+      },
+      maxWidth: { content: "68rem" }
+    }
+  },
+  plugins: [require("@tailwindcss/typography")]
+} satisfies Config;
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@content/*": ["content/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+</file>
+
+<file path="tsconfig.node.json">
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true
+  },
+  "include": ["vite.config.ts", "tailwind.config.ts"]
+}
+</file>
+
+<file path="vite.config.ts">
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@content": fileURLToPath(new URL("./content", import.meta.url))
+    }
+  },
+  assetsInclude: ["**/*.md"],
+  server: {
+    host: true,
+    port: 5173
+  }
+});
+</file>
+
+</files>
