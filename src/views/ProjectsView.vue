@@ -12,10 +12,8 @@ const categories: ProjectCategory[] = ["SaaS", "Backend", "Full Stack"];
 const activeCategory = ref<ProjectCategory | "All">("All");
 
 const filtered = computed(() => {
-  if (activeCategory.value === "All") return projects.map((p) => p.frontmatter);
-  return projects
-    .filter((p) => p.frontmatter.categories.includes(activeCategory.value as ProjectCategory))
-    .map((p) => p.frontmatter);
+  if (activeCategory.value === "All") return projects;
+  return projects.filter((p) => p.categories.includes(activeCategory.value as ProjectCategory));
 });
 </script>
 

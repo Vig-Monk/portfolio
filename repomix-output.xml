@@ -47,6 +47,9 @@ content/
     soko-platform.md
     taskr.md
 public/
+  images/
+    portrait-desktop.webp
+    portrait-mobile.webp
   robots.txt
   sitemap.xml
 src/
@@ -55,12 +58,17 @@ src/
     AppHeader.vue
     BaseButton.vue
     BaseCard.vue
+    CommandPalette.vue
+    KonamiEasterEgg.vue
     MarkdownRenderer.vue
+    MetricCounter.vue
     MobileMenu.vue
     ProjectCard.vue
     ProjectGrid.vue
+    ScrollProgress.vue
     TechBadge.vue
   composables/
+    useCommandPalette.ts
     useMobileMenu.ts
   content/
     projects.ts
@@ -68,9 +76,12 @@ src/
     index.ts
   types/
     project.ts
+  utils/
+    frontmatter.ts
   views/
     AboutView.vue
     ContactView.vue
+    DevNotesView.vue
     HomeView.vue
     NotFoundView.vue
     ProjectDetailView.vue
@@ -81,6 +92,7 @@ src/
 index.html
 package.json
 postcss.config.js
+tailind.config.ts
 tailwind.config.ts
 tsconfig.json
 tsconfig.node.json
@@ -89,6 +101,401 @@ vite.config.ts
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/components/CommandPalette.vue">
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { useRouter } from "vue-router";
+import { useCommandPalette } from "@/composables/useCommandPalette";
+
+const { isOpen, close, toggle } = useCommandPalette();
+const router = useRouter();
+
+const query = ref("");
+const activeIndex = ref(0);
+const inputEl = ref<HTMLInputElement | null>(null);
+
+interface Command {
+  label: string;
+  hint?: string;
+  action: () => void;
+}
+
+const commands: Command[] = [
+  { label: "Home", hint: "Go to", action: () => router.push("/") },
+  { label: "Projects", hint: "Go to", action: () => router.push("/projects") },
+  { label: "About", hint: "Go to", action: () => router.push("/about") },
+  { label: "Contact", hint: "Go to", action: () => router.push("/contact") },
+  { label: "GitHub", hint: "Open", action: () => window.open("https://github.com/Vig-Monk", "_blank", "noopener,noreferrer") }
+];
+
+const filtered = computed(() =>
+  query.value.trim()
+    ? commands.filter((c) => c.label.toLowerCase().includes(query.value.trim().toLowerCase()))
+    : commands
+);
+
+function runActive() {
+  const cmd = filtered.value[activeIndex.value];
+  if (!cmd) return;
+  cmd.action();
+  close();
+}
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    toggle();
+  }
+}
+
+function onPaletteKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    close();
+    return;
+  }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeIndex.value = Math.min(activeIndex.value + 1, filtered.value.length - 1);
+  }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeIndex.value = Math.max(activeIndex.value - 1, 0);
+  }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    runActive();
+  }
+}
+
+watch(isOpen, async (open) => {
+  if (open) {
+    query.value = "";
+    activeIndex.value = 0;
+    await nextTick();
+    inputEl.value?.focus();
+  }
+});
+
+watch(query, () => {
+  activeIndex.value = 0;
+});
+
+onMounted(() => window.addEventListener("keydown", onGlobalKeydown));
+onUnmounted(() => window.removeEventListener("keydown", onGlobalKeydown));
+</script>
+
+<template>
+  <Teleport to="body">
+    <div
+      v-if="isOpen"
+      class="fixed inset-0 z-[60] flex items-start justify-center bg-canvas-inset/70 pt-[15vh]"
+      @click="close"
+    >
+      <div
+        class="w-full max-w-lg overflow-hidden rounded-xl border border-border bg-canvas-raised shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        @click.stop
+        @keydown="onPaletteKeydown"
+      >
+        <div class="flex items-center gap-3 border-b border-border px-4 py-3">
+          <span class="font-mono text-ink-faint">⌘K</span>
+          <input
+            ref="inputEl"
+            v-model="query"
+            type="text"
+            placeholder="Where to?"
+            class="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+          />
+        </div>
+        <ul class="max-h-72 overflow-y-auto p-2">
+          <li v-if="filtered.length === 0" class="px-3 py-6 text-center text-sm text-ink-muted">
+            No matches
+          </li>
+          <li
+            v-for="(cmd, i) in filtered"
+            :key="cmd.label"
+            class="flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors"
+            :class="i === activeIndex ? 'bg-accent/10 text-ink' : 'text-ink-muted hover:bg-canvas-inset'"
+            @mouseenter="activeIndex = i"
+            @click="cmd.action(); close();"
+          >
+            <span>{{ cmd.label }}</span>
+            <span v-if="cmd.hint" class="font-mono text-xs text-ink-faint">{{ cmd.hint }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </Teleport>
+</template>
+</file>
+
+<file path="src/components/KonamiEasterEgg.vue">
+<script setup lang="ts">
+import { onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+const sequence = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+let position = 0;
+
+function onKeydown(e: KeyboardEvent) {
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const expected = sequence[position];
+
+  if (key === expected) {
+    position += 1;
+    if (position === sequence.length) {
+      position = 0;
+      router.push("/dev");
+    }
+  } else {
+    position = key === sequence[0] ? 1 : 0;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onKeydown);
+  console.log(
+    "%cLooking for the interesting stuff?%c\nTry the Konami code: ↑ ↑ ↓ ↓ ← → ← → B A",
+    "color:#29E0BC;font-weight:bold;font-size:13px;",
+    "color:#7A8A82;font-size:12px;"
+  );
+});
+
+onUnmounted(() => window.removeEventListener("keydown", onKeydown));
+</script>
+
+<template></template>
+</file>
+
+<file path="src/components/MetricCounter.vue">
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
+
+const props = defineProps<{ target: number; suffix?: string; duration?: number }>();
+
+const display = ref(0);
+const el = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+let hasAnimated = false;
+
+function animate() {
+  const duration = props.duration ?? 1200;
+  const start = performance.now();
+
+  function tick(now: number) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    display.value = Math.round(props.target * eased);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting && !hasAnimated) {
+        hasAnimated = true;
+        animate();
+      }
+    },
+    { threshold: 0.4 }
+  );
+  if (el.value) observer.observe(el.value);
+});
+
+onUnmounted(() => observer?.disconnect());
+</script>
+
+<template>
+  <span ref="el">{{ display }}{{ suffix }}</span>
+</template>
+</file>
+
+<file path="src/components/ScrollProgress.vue">
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
+
+const progress = ref(0);
+let ticking = false;
+
+function update() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  progress.value = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  ticking = false;
+}
+
+function onScroll() {
+  if (!ticking) {
+    requestAnimationFrame(update);
+    ticking = true;
+  }
+}
+
+onMounted(() => {
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", onScroll);
+  window.removeEventListener("resize", onScroll);
+});
+</script>
+
+<template>
+  <div class="fixed left-0 top-0 z-50 h-0.5 w-full">
+    <div class="h-full bg-accent-bright transition-[width] duration-150 ease-out" :style="{ width: progress + '%' }" />
+  </div>
+</template>
+</file>
+
+<file path="src/composables/useCommandPalette.ts">
+import { ref } from "vue";
+
+// Same pattern as useMobileMenu — module-level singleton state.
+const isOpen = ref(false);
+
+export function useCommandPalette() {
+  function open() {
+    isOpen.value = true;
+    document.body.style.overflow = "hidden";
+  }
+  function close() {
+    isOpen.value = false;
+    document.body.style.overflow = "";
+  }
+  function toggle() {
+    isOpen.value ? close() : open();
+  }
+  return { isOpen, open, close, toggle };
+}
+</file>
+
+<file path="src/views/DevNotesView.vue">
+<script setup lang="ts">
+import { onMounted } from "vue";
+
+onMounted(() => {
+  document.title = "Dev Notes — Lu";
+});
+
+const architectureNotes = [
+  "Soko's tenant isolation is enforced with branded TypeScript types (OrgId, UserId), not just naming convention — a function expecting one can't silently accept the other.",
+  "No ORM anywhere in the stack. Raw pg with hand-written SQL keeps every query's real behavior visible instead of hidden behind an abstraction.",
+  "Auth uses refresh token rotation with reuse detection — a stolen refresh token that gets reused after rotation immediately signals a compromise."
+];
+
+const favoriteTools = [
+  "Termux + Acode — the entire dev environment lives on a phone, on purpose.",
+  "Raw pg over any ORM, including Prisma (which doesn't run in this environment anyway).",
+  "TypeScript strict mode with no implicit any, everywhere."
+];
+
+const currentlyLearning = [
+  "DSA, scoped to the ~20% of concepts that cover 80% of real-world use cases, anchored to Soko, Joy Agency, and Taskr as reference points instead of abstract problems.",
+  "Distributed systems fundamentals, as Soko's multi-tenant architecture grows.",
+  "OOP patterns in TypeScript, applied back into the Soko codebase as they land."
+];
+
+const experiments = [
+  "Reading codebases the way multi-timeframe trading reads a chart — zoom out for architecture, zoom in for the one function that's about to break."
+];
+</script>
+
+<template>
+  <section class="container-page py-20">
+    <p class="eyebrow mb-3">You found it</p>
+    <h1 class="mb-4 text-display-lg font-display font-semibold text-ink">Dev Notes</h1>
+    <p class="mb-16 max-w-xl text-ink-muted">
+      A page that isn't linked anywhere. If you got here with
+      ↑ ↑ ↓ ↓ ← → ← → B A, you're exactly the kind of person this page is for.
+    </p>
+
+    <h2 class="mb-4 text-xl font-semibold text-ink">Architecture Notes</h2>
+    <ul class="mb-12 space-y-3">
+      <li
+        v-for="note in architectureNotes"
+        :key="note"
+        class="rounded-lg border border-border bg-canvas-raised px-4 py-3 text-sm text-ink-muted"
+      >
+        {{ note }}
+      </li>
+    </ul>
+
+    <h2 class="mb-4 text-xl font-semibold text-ink">Favorite Tools</h2>
+    <ul class="mb-12 space-y-3">
+      <li
+        v-for="tool in favoriteTools"
+        :key="tool"
+        class="rounded-lg border border-border bg-canvas-raised px-4 py-3 text-sm text-ink-muted"
+      >
+        {{ tool }}
+      </li>
+    </ul>
+
+    <h2 class="mb-4 text-xl font-semibold text-ink">Currently Learning</h2>
+    <ul class="mb-12 space-y-3">
+      <li
+        v-for="item in currentlyLearning"
+        :key="item"
+        class="rounded-lg border border-border bg-canvas-raised px-4 py-3 text-sm text-ink-muted"
+      >
+        {{ item }}
+      </li>
+    </ul>
+
+    <h2 class="mb-4 text-xl font-semibold text-ink">Fun Engineering Experiments</h2>
+    <ul class="space-y-3">
+      <li
+        v-for="item in experiments"
+        :key="item"
+        class="rounded-lg border border-border bg-canvas-raised px-4 py-3 text-sm text-ink-muted"
+      >
+        {{ item }}
+      </li>
+    </ul>
+  </section>
+</template>
+</file>
+
+<file path="tailind.config.ts">
+import type { Config } from "tailwindcss";
+
+export default {
+  darkMode: "class",
+  content: ["./index.html", "./src/**/*.{vue,ts}"],
+  theme: {
+    extend: {
+      colors: {
+        canvas: { DEFAULT: "#0A0E0C", raised: "#0F1510", inset: "#070A08" },
+        border: { DEFAULT: "#1A2420", subtle: "#141A17" },
+        ink: { DEFAULT: "#E8ECE9", muted: "#7A8A82", faint: "#4D5A53" },
+        accent: { DEFAULT: "#0D9D6F", dim: "#0A7A57", bright: "#14C088" }
+      },
+      fontFamily: {
+        display: ["Inter Tight", "Inter", "system-ui", "sans-serif"],
+        body: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"]
+      },
+      fontSize: {
+        "display-xl": ["4rem", { lineHeight: "1.04", letterSpacing: "-0.02em" }],
+        "display-lg": ["2.75rem", { lineHeight: "1.08", letterSpacing: "-0.01em" }]
+      },
+      maxWidth: { content: "68rem" }
+    }
+  },
+  plugins: [require("@tailwindcss/typography")]
+} satisfies Config;
+</file>
 
 <file path="content/projects/joy-agency.md">
 ---
@@ -151,6 +558,9 @@ uploads through your own server.
 ## Stack
 
 Vue 3 · Express · MongoDB · Cloudinary
+
+GitHub: [joy-agency](https://github.com/Vig-Monk/joy-agency-)
+Live Demo [joy-agency-](http://joyrecuitmentagency.vercel.app)
 </file>
 
 <file path="content/projects/soko-platform.md">
@@ -276,6 +686,7 @@ CRUD logic itself.
 Vue 3 · Express · MongoDB · Node.js · Render · Vercel
 
 GitHub: [express-api-fundamentals](https://github.com/Vig-Monk/express-api-fundamentals)
+Live Demo [Ludwigs-tasky](http://ludwigs-tasky.vercel.app)
 </file>
 
 <file path="public/robots.txt">
@@ -315,22 +726,45 @@ const year = new Date().getFullYear();
 
 <file path="src/components/AppHeader.vue">
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
 import { useMobileMenu } from "@/composables/useMobileMenu";
+import { useCommandPalette } from "@/composables/useCommandPalette";
 
 const { isOpen, toggle } = useMobileMenu();
+const { toggle: togglePalette } = useCommandPalette();
 
 const navItems = [
   { to: "/", label: "Home" },
   { to: "/projects", label: "Projects" },
   { to: "/about", label: "About" }
 ];
+
+const scrolled = ref(false);
+
+function onScroll() {
+  scrolled.value = window.scrollY > 8;
+}
+
+onMounted(() => {
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+});
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", onScroll);
+});
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 border-b border-border bg-canvas/85 backdrop-blur-md">
+  <header
+    class="sticky top-0 z-40 border-b transition-all duration-300"
+    :class="scrolled
+      ? 'border-border bg-canvas/80 backdrop-blur-md shadow-[0_1px_24px_-8px_rgba(0,0,0,0.6)]'
+      : 'border-transparent bg-transparent shadow-none'"
+  >
     <nav class="container-page flex h-16 items-center justify-between" aria-label="Primary">
       <RouterLink to="/" class="font-mono text-sm text-ink" aria-label="Lu — home">
-        lu<span class="text-accent-bright">.</span>dev
+        ludwig<span class="text-accent-bright">.</span>dev
       </RouterLink>
 
       <div class="hidden items-center gap-8 md:flex">
@@ -338,19 +772,30 @@ const navItems = [
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="text-sm text-ink-muted transition-colors hover:text-ink"
+          class="nav-link text-sm text-ink-muted transition-colors duration-300 hover:text-ink"
           active-class="text-ink"
         >
           {{ item.label }}
         </RouterLink>
       </div>
 
-      <RouterLink
-        to="/contact"
-        class="hidden rounded-lg border border-border px-4 py-2 text-sm text-ink transition-colors hover:border-accent-dim hover:text-accent-bright md:block"
-      >
-        Contact
-      </RouterLink>
+      <div class="hidden items-center gap-3 md:flex">
+        <button
+          type="button"
+          aria-label="Open command palette"
+          class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 font-mono text-xs text-ink-faint transition-colors duration-300 hover:border-accent-dim hover:text-ink-muted"
+          @click="togglePalette"
+        >
+          ⌘K
+        </button>
+
+        <RouterLink
+          to="/contact"
+          class="rounded-lg border border-border px-4 py-2 text-sm text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-dim hover:text-accent-bright hover:shadow-[0_8px_20px_-10px_rgba(13,157,111,0.45)]"
+        >
+          Contact
+        </RouterLink>
+      </div>
 
       <button
         type="button"
@@ -411,8 +856,10 @@ withDefaults(defineProps<{ hoverable?: boolean }>(), { hoverable: true });
 
 <template>
   <div
-    class="rounded-xl border border-border bg-canvas-raised p-6 transition-all duration-300"
-    :class="hoverable ? 'hover:-translate-y-0.5 hover:border-accent-dim' : ''"
+    class="relative overflow-hidden rounded-xl border border-border bg-canvas-raised p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] transition-all duration-300"
+    :class="hoverable
+      ? 'hover:-translate-y-1.5 hover:border-accent-dim hover:shadow-[0_20px_40px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.04)]'
+      : ''"
   >
     <slot />
   </div>
@@ -485,16 +932,68 @@ defineProps<{ project: ProjectFrontmatter }>();
 </script>
 
 <template>
-  <RouterLink :to="`/projects/${project.slug}`" class="block">
-    <BaseCard>
+  <BaseCard class="group relative">
+    <RouterLink
+      :to="`/projects/${project.slug}`"
+      class="absolute inset-0 z-0 rounded-xl"
+      :aria-label="`View case study — ${project.title}`"
+    />
+
+    <div class="pointer-events-none relative z-[1]">
       <p class="eyebrow mb-2">{{ project.categories.join(" · ") }}</p>
       <h3 class="mb-2 text-lg font-semibold text-ink">{{ project.title }}</h3>
       <p class="mb-4 text-sm text-ink-muted">{{ project.summary }}</p>
       <div class="flex flex-wrap gap-2">
         <TechBadge v-for="tech in project.techStack" :key="tech" :label="tech" />
       </div>
-    </BaseCard>
-  </RouterLink>
+    </div>
+
+    <div
+      class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr] group-focus-within:grid-rows-[1fr]"
+    >
+      <div class="min-h-0 overflow-hidden">
+        <div class="relative z-[1] mt-4 border-t border-border pt-4">
+          <p class="eyebrow pointer-events-none mb-2">Architecture Focus</p>
+          <div class="pointer-events-none mb-3 flex flex-wrap gap-2">
+            <span
+              v-for="highlight in project.architectureHighlights"
+              :key="highlight"
+              class="rounded-md bg-canvas-inset px-2.5 py-1 font-mono text-xs text-ink-muted"
+            >
+              {{ highlight }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-4 text-sm">
+            <a
+              v-if="project.githubUrl"
+              :href="project.githubUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="relative z-10 pointer-events-auto text-ink-muted hover:text-ink"
+              @click.stop
+            >
+              GitHub ↗
+            </a>
+            <a
+              v-if="project.demoUrl"
+              :href="project.demoUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="relative z-10 pointer-events-auto text-ink-muted hover:text-ink"
+              @click.stop
+            >
+              Live Demo ↗
+            </a>
+            <span class="ml-auto inline-flex items-center gap-1 text-accent-bright">
+              View case study
+              <span class="transition-transform duration-300 group-hover:translate-x-1">→</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </BaseCard>
 </template>
 </file>
 
@@ -508,7 +1007,15 @@ defineProps<{ projects: ProjectFrontmatter[] }>();
 
 <template>
   <div class="grid gap-6 sm:grid-cols-2">
-    <ProjectCard v-for="project in projects" :key="project.slug" :project="project" />
+    <div
+      v-for="(project, i) in projects"
+      :key="project.slug"
+      v-motion
+      :initial="{ opacity: 0, y: 24 }"
+      :visible-once="{ opacity: 1, y: 0, transition: { duration: 600, delay: i * 100 } }"
+    >
+      <ProjectCard :project="project" />
+    </div>
   </div>
 </template>
 </file>
@@ -550,59 +1057,35 @@ export function useMobileMenu() {
 </file>
 
 <file path="src/content/projects.ts">
-import matter from "gray-matter";
-import type { ProjectEntry, ProjectFrontmatter } from "@/types/project";
+// src/content/projects.ts
+import { parseFrontmatter } from "@/utils/frontmatter";
+import type { ProjectFrontmatter } from "@/types/project";
 
-// import.meta.glob discovers every .md file under content/projects at build
-// time — add a new file later and it appears automatically, no component
-// edits needed. This single function is the entire "CMS".
 const modules = import.meta.glob("@content/projects/*.md", {
   query: "?raw",
   import: "default",
   eager: true
 }) as Record<string, string>;
 
-export const projects: ProjectEntry[] = Object.values(modules)
-  .map((raw) => {
-    const { data, content } = matter(raw);
-    return { frontmatter: data as ProjectFrontmatter, content };
-  })
-  .sort((a, b) => (a.frontmatter.order ?? 99) - (b.frontmatter.order ?? 99));
+export const projects: ProjectFrontmatter[] = Object.values(modules)
+  .map((raw) => parseFrontmatter<ProjectFrontmatter>(raw).data)
+  .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
-export function getProjectBySlug(slug: string): ProjectEntry | undefined {
-  return projects.find((p) => p.frontmatter.slug === slug);
+export const featuredProjects = projects.filter((p) => p.featured);
+
+// Lazy — only fetched and parsed when someone actually opens a case study.
+const lazyModules = import.meta.glob("@content/projects/*.md", {
+  query: "?raw",
+  import: "default"
+}) as Record<string, () => Promise<string>>;
+
+export async function getProjectBySlug(slug: string) {
+  const entry = Object.entries(lazyModules).find(([path]) => path.endsWith(`/${slug}.md`));
+  if (!entry) return undefined;
+  const raw = await entry[1]();
+  const { data, content } = parseFrontmatter<ProjectFrontmatter>(raw);
+  return { frontmatter: data, content };
 }
-
-export const featuredProjects = projects.filter((p) => p.frontmatter.featured);
-</file>
-
-<file path="src/router/index.ts">
-import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
-
-const routes: RouteRecordRaw[] = [
-  { path: "/", name: "home", component: () => import("@/views/HomeView.vue") },
-  { path: "/about", name: "about", component: () => import("@/views/AboutView.vue") },
-  { path: "/projects", name: "projects", component: () => import("@/views/ProjectsView.vue") },
-  {
-    path: "/projects/:slug",
-    name: "project-detail",
-    component: () => import("@/views/ProjectDetailView.vue"),
-    props: true
-  },
-  { path: "/contact", name: "contact", component: () => import("@/views/ContactView.vue") },
-  { path: "/:pathMatch(.*)*", name: "not-found", component: () => import("@/views/NotFoundView.vue") }
-];
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes,
-  scrollBehavior(to, _from, savedPosition) {
-    if (savedPosition) return savedPosition;
-    return { top: 0 };
-  }
-});
-
-export default router;
 </file>
 
 <file path="src/types/project.ts">
@@ -627,19 +1110,143 @@ export interface ProjectEntry {
 }
 </file>
 
+<file path="src/utils/frontmatter.ts">
+/**
+ * Minimal, browser-safe frontmatter parser.
+ * Replaces gray-matter, which depends on Node's Buffer global and
+ * crashes when bundled for the browser by Vite.
+ *
+ * Supports the subset of YAML our project frontmatter actually uses:
+ * - flat string values:      title: "Soko Platform"
+ * - booleans:                featured: true
+ * - numbers:                 order: 1
+ * - inline string arrays:    categories: ["SaaS", "Backend"]
+ */
+export function parseFrontmatter<T>(raw: string): { data: T; content: string } {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+
+  if (!match) {
+    return { data: {} as T, content: raw };
+  }
+
+  const [, frontmatterBlock, content] = match;
+  const data: Record<string, unknown> = {};
+
+  for (const line of (frontmatterBlock ?? "").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const separatorIndex = trimmed.indexOf(":");
+    if (separatorIndex === -1) continue;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    let value = trimmed.slice(separatorIndex + 1).trim();
+
+    data[key] = parseValue(value);
+  }
+
+  return { data: data as T, content: (content ?? "").trim() };
+}
+
+function parseValue(value: string): unknown {
+  // Inline array: ["SaaS", "Backend"]
+  if (value.startsWith("[") && value.endsWith("]")) {
+    const inner = value.slice(1, -1).trim();
+    if (!inner) return [];
+    return inner
+      .split(",")
+      .map((item) => stripQuotes(item.trim()))
+      .filter(Boolean);
+  }
+
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (value !== "" && !Number.isNaN(Number(value))) return Number(value);
+
+  return stripQuotes(value);
+}
+
+function stripQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+</file>
+
 <file path="src/views/AboutView.vue">
 <script setup lang="ts">
 import { onMounted } from "vue";
 import BaseCard from "@/components/BaseCard.vue";
+import MetricCounter from "@/components/MetricCounter.vue";
 
 onMounted(() => {
   document.title = "About — Lu";
 });
 
-const principles = [
-  { title: "Correctness before speed", body: "Constraints, types, and migrations come first. Performance work happens once the schema can be trusted." },
-  { title: "No ORM, on purpose", body: "Raw pg and hand-written SQL keep query behavior visible and debuggable — no hidden N+1s from an abstraction layer." },
-  { title: "Multi-tenancy from day one", body: "Branded ID types (OrgId, UserId) make tenant isolation a compile-time concern, not a runtime hope." }
+const metrics = [
+  { label: "Projects Shipped", value: 0, suffix: "" }, // TODO: count real deployed/production-ready projects (Taskr, Joy Agency, Soko once live, etc.)
+  { label: "Auth Systems Built", value: 0, suffix: "" }, // TODO: JWT/refresh-rotation implementations across projects
+  { label: "Databases Designed", value: 0, suffix: "" }, // TODO: distinct schemas you've designed from scratch
+  { label: "Years Writing Code", value: 0, suffix: "" } // TODO: honest count, doesn't need to be impressive to be credible
+];
+
+const journey = [
+  {
+    period: "Getting started",
+    title: "Started programming, self-taught, on Android",
+    body: "Termux and Acode from day one — a constraint that shaped every toolchain decision since: lean setups, no native binaries, explicit code over hidden abstractions."
+  },
+  {
+    period: "First full build",
+    title: "Built Taskr",
+    body: "A MEVN-stack task manager, taken through a full audit and made production-ready — the first project that forced real decisions about structure, not just following a tutorial."
+  },
+  {
+    period: "First real client",
+    title: "Shipped Joy Agency",
+    body: "A domestic staffing platform (Vue 3, Express, MongoDB, Cloudinary) built and deployed for an actual Nairobi client — resolving real production issues, not toy-project ones: CORS, SPA rewrites, upload failures."
+  },
+  {
+    period: "Now",
+    title: "Designing Soko",
+    body: "A multi-tenant SaaS platform for East African market traders, TypeScript and raw PostgreSQL by design — no ORM, branded ID types, explicit transactions. Built from the inside: I worked as a porter at the market it's designed for."
+  },
+  {
+    period: "Ongoing",
+    title: "Deepening the fundamentals",
+    body: "Structured DSA study and distributed-systems concepts, anchored to Soko, Joy Agency, and Taskr as real reference points rather than abstract exercises."
+  }
+];
+
+const values = [
+  {
+    title: "Correctness first",
+    body: "Constraints, types, and migrations come before performance work. Speed optimizations happen once the schema can be trusted."
+  },
+  {
+    title: "Security",
+    body: "Refresh token rotation with reuse detection, not just access tokens with long lifespans — auth that assumes tokens will eventually leak, and plans for it."
+  },
+  {
+    title: "Scalability",
+    body: "Indexing and schema decisions get made upfront, before the data volume that would expose a bad one — not retrofitted after a slow query shows up in production."
+  },
+  {
+    title: "Maintainability",
+    body: "Snake_case types that mirror raw pg output, explicit transactions, no implicit any — so six months from now, the code still reads like what it actually does."
+  },
+  {
+    title: "No ORM, on purpose",
+    body: "Raw pg and hand-written SQL keep query behavior visible and debuggable — no hidden N+1s from an abstraction layer deciding what to run."
+  },
+  {
+    title: "Multi-tenancy from day one",
+    body: "Branded ID types (OrgId, UserId) make tenant isolation a compile-time concern, not a runtime hope."
+  }
 ];
 
 const architectureTopics = [
@@ -677,9 +1284,52 @@ const architectureTopics = [
       </p>
     </div>
 
-    <h2 class="mb-6 text-2xl font-semibold text-ink">Engineering Principles</h2>
+    <div class="mb-16 grid grid-cols-2 gap-6 sm:grid-cols-4">
+      <div
+        v-for="(m, i) in metrics"
+        :key="m.label"
+        v-motion
+        :initial="{ opacity: 0, y: 16 }"
+        :visible-once="{ opacity: 1, y: 0, transition: { duration: 500, delay: i * 100 } }"
+        class="text-center"
+      >
+        <p class="text-3xl font-display font-semibold text-accent-bright sm:text-4xl">
+          <MetricCounter :target="m.value" :suffix="m.suffix" />
+        </p>
+        <p class="mt-1 text-xs text-ink-muted">{{ m.label }}</p>
+      </div>
+    </div>
+
+    <h2 class="mb-8 text-2xl font-semibold text-ink">Engineering Journey</h2>
+    <div class="relative mb-16 pl-10">
+      <div class="absolute bottom-1 left-[7px] top-1 w-px bg-border" />
+      <ol class="space-y-10">
+        <li
+          v-for="(step, i) in journey"
+          :key="step.title"
+          v-motion
+          :initial="{ opacity: 0, x: -16 }"
+          :visible-once="{ opacity: 1, x: 0, transition: { duration: 500, delay: i * 150 } }"
+          class="relative"
+        >
+          <span class="absolute -left-10 top-0.5 h-4 w-4 rounded-full border-2 border-accent-bright bg-canvas" />
+          <p class="eyebrow mb-1">{{ step.period }}</p>
+          <h3 class="mb-1 font-semibold text-ink">{{ step.title }}</h3>
+          <p class="max-w-xl text-sm text-ink-muted">{{ step.body }}</p>
+        </li>
+      </ol>
+    </div>
+
+    <h2 class="mb-6 text-2xl font-semibold text-ink">Engineering Values</h2>
     <div class="mb-16 grid gap-5 sm:grid-cols-3">
-      <BaseCard v-for="item in principles" :key="item.title" :hoverable="false">
+      <BaseCard
+        v-for="(item, i) in values"
+        :key="item.title"
+        :hoverable="false"
+        v-motion
+        :initial="{ opacity: 0, y: 24 }"
+        :visible-once="{ opacity: 1, y: 0, transition: { duration: 600, delay: i * 100 } }"
+      >
         <h3 class="mb-2 font-semibold text-ink">{{ item.title }}</h3>
         <p class="text-sm text-ink-muted">{{ item.body }}</p>
       </BaseCard>
@@ -744,7 +1394,7 @@ import { ref } from "vue";
       <div>
         <h2 class="mb-4 text-lg font-semibold text-ink">Reach me directly</h2>
         <ul class="space-y-3 text-sm">
-          <li><a href="mailto:hello@vig-monk.dev" class="text-ink-muted hover:text-ink">hello@vig-monk.dev</a></li>
+          <li><a href="mailto:hello@vig-monk.dev" class="text-ink-muted hover:text-ink">ludwigmaingi@gmail.com</a></li>
           <li><a href="https://github.com/Vig-Monk" target="_blank" rel="noopener noreferrer" class="text-ink-muted hover:text-ink">github.com/Vig-Monk</a></li>
         </ul>
       </div>
@@ -810,30 +1460,126 @@ const whatIDo = [
   { title: "Database Architecture", body: "PostgreSQL schemas designed for correctness first, then speed — indexes, constraints, migrations." },
   { title: "System Design", body: "Auth flows, RBAC, multi-tenancy boundaries — the parts that are expensive to get wrong later." }
 ];
+
+const stack = ["TypeScript", "Node.js", "Express", "PostgreSQL", "Redis", "Docker", "AWS"];
 </script>
 
 <template>
-  <section class="container-page py-24 sm:py-32">
-    <p class="eyebrow mb-5">Backend & Systems Engineer</p>
-    <h1 class="max-w-3xl text-display-lg font-display font-semibold text-ink sm:text-display-xl">
-      Designing APIs, databases, and systems that scale.
-    </h1>
-    <p class="mt-6 max-w-xl text-lg text-ink-muted">
-      Helping businesses build reliable software through thoughtful architecture,
-      scalable backend systems, and modern SaaS development.
-    </p>
-    <div class="mt-10 flex flex-wrap gap-4">
-      <BaseButton to="/projects">View Projects</BaseButton>
-      <BaseButton to="/about" variant="secondary">More About My Approach</BaseButton>
+  <section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 -z-10">
+      <div class="absolute -top-32 right-0 h-[36rem] w-[36rem] rounded-full bg-accent/10 blur-[120px]" />
+    </div>
+
+    <div class="container-page grid items-center gap-12 py-20 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:py-32">
+      <div
+        v-motion
+        :initial="{ opacity: 0, y: 24 }"
+        :enter="{ opacity: 1, y: 0, transition: { duration: 700, delay: 300 } }"
+        class="order-1 lg:order-2"
+      >
+        <div class="relative mx-auto max-w-sm lg:max-w-none">
+          <img
+            src="/images/portrait-desktop.webp"
+            alt="Portrait of Lu, backend and systems engineer"
+            width="891"
+            height="1024"
+            fetchpriority="high"
+            decoding="async"
+            class="hidden w-full rounded-2xl object-cover sm:block"
+          />
+          <img
+            src="/images/portrait-mobile.webp"
+            alt="Portrait of Lu, backend and systems engineer"
+            width="799"
+            height="942"
+            fetchpriority="high"
+            decoding="async"
+            class="w-full rounded-2xl object-cover sm:hidden"
+          />
+        </div>
+      </div>
+
+      <div class="order-2 lg:order-1">
+        <p
+          v-motion
+          :initial="{ opacity: 0, y: 12 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 500 } }"
+          class="eyebrow mb-5"
+        >
+          Backend & Systems Engineer
+        </p>
+
+        <h1
+          v-motion
+          :initial="{ opacity: 0, y: 16 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 600, delay: 100 } }"
+          class="max-w-xl text-display-lg font-display font-semibold leading-[1.05] text-ink sm:text-display-xl"
+        >
+          Designing APIs,
+          databases,
+          and systems
+          that scale.
+        </h1>
+
+        <p
+          v-motion
+          :initial="{ opacity: 0, y: 16 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 600, delay: 200 } }"
+          class="mt-6 max-w-[600px] text-lg leading-relaxed text-ink-muted"
+        >
+          Helping businesses build reliable software through thoughtful architecture,
+          scalable backend systems, and modern SaaS development.
+        </p>
+
+        <div
+          v-motion
+          :initial="{ opacity: 0, y: 16 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 600, delay: 300 } }"
+          class="mt-10 flex flex-wrap gap-4"
+        >
+          <BaseButton to="/projects" class="hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_rgba(13,157,111,0.5)]">
+            View Projects
+          </BaseButton>
+          <BaseButton to="/about" variant="secondary" class="hover:-translate-y-0.5">
+            More About My Approach
+          </BaseButton>
+        </div>
+
+        <div
+          v-motion
+          :initial="{ opacity: 0 }"
+          :enter="{ opacity: 1, transition: { duration: 600, delay: 400 } }"
+          class="mt-12 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-xs uppercase tracking-[0.14em] text-ink-faint"
+        >
+          <span v-for="(tech, i) in stack" :key="tech" class="flex items-center gap-5">
+            {{ tech }}
+            <span v-if="i < stack.length - 1" class="h-1 w-1 rounded-full bg-border" />
+          </span>
+        </div>
+      </div>
     </div>
   </section>
 
   <div class="divider" />
 
   <section class="container-page py-20">
-    <h2 class="mb-10 text-2xl font-semibold text-ink">What I Do</h2>
+    <h2
+      v-motion
+      :initial="{ opacity: 0, y: 20, filter: 'blur(8px)' }"
+      :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 600 } }"
+      class="mb-10 text-2xl font-semibold text-ink"
+    >
+      What I Do
+    </h2>
     <div class="grid gap-5 sm:grid-cols-2">
-      <BaseCard v-for="item in whatIDo" :key="item.title" :hoverable="false">
+      <BaseCard
+        v-for="(item, i) in whatIDo"
+        :key="item.title"
+        :hoverable="false"
+        v-motion
+        :initial="{ opacity: 0, y: 24 }"
+        :visible-once="{ opacity: 1, y: 0, transition: { duration: 600, delay: i * 100 } }"
+      >
         <h3 class="mb-2 font-semibold text-ink">{{ item.title }}</h3>
         <p class="text-sm text-ink-muted">{{ item.body }}</p>
       </BaseCard>
@@ -843,7 +1589,14 @@ const whatIDo = [
   <div class="divider" />
 
   <section class="container-page py-20">
-    <h2 class="mb-10 text-2xl font-semibold text-ink">Featured Projects</h2>
+    <h2
+      v-motion
+      :initial="{ opacity: 0, y: 20, filter: 'blur(8px)' }"
+      :visible-once="{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 600 } }"
+      class="mb-10 text-2xl font-semibold text-ink"
+    >
+      Featured Projects
+    </h2>
     <ProjectGrid :projects="featuredProjects.map((p) => p.frontmatter)" />
   </section>
 
@@ -983,25 +1736,32 @@ const filtered = computed(() => {
 import AppHeader from "@/components/AppHeader.vue";
 import AppFooter from "@/components/AppFooter.vue";
 import MobileMenu from "@/components/MobileMenu.vue";
+import ScrollProgress from "@/components/ScrollProgress.vue";
+import CommandPalette from "@/components/CommandPalette.vue";
+import KonamiEasterEgg from "@/components/KonamiEasterEgg.vue";
 </script>
 
 <template>
-  <AppHeader />
-  <MobileMenu />
-  <main>
-    <RouterView />
-  </main>
-  <AppFooter />
+    <ScrollProgress />
+    <AppHeader />
+    <MobileMenu />
+    <CommandPalette />
+    <KonamiEasterEgg />
+    <main>
+        <RouterView />
+    </main>
+    <AppFooter />
 </template>
 </file>
 
 <file path="src/main.ts">
 import { createApp } from "vue";
+import { MotionPlugin } from "@vueuse/motion";
 import router from "@/router";
 import App from "@/App.vue";
 import "@/style.css";
 
-createApp(App).use(router).mount("#app");
+createApp(App).use(router).use(MotionPlugin).mount("#app");
 </file>
 
 <file path="src/style.css">
@@ -1062,6 +1822,28 @@ createApp(App).use(router).mount("#app");
 .markdown-body {
   @apply prose prose-invert max-w-none prose-headings:font-display prose-a:text-accent-bright prose-code:font-mono prose-code:text-accent-bright prose-code:before:content-none prose-code:after:content-none prose-pre:bg-canvas-inset prose-pre:border prose-pre:border-border;
 }
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 1px;
+  width: 100%;
+  background-color: theme("colors.accent.bright");
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 300ms ease;
+}
+
+.nav-link:hover::after,
+.nav-link.text-ink::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
 </file>
 
 <file path="index.html">
@@ -1101,33 +1883,34 @@ createApp(App).use(router).mount("#app");
 
 <file path="package.json">
 {
-  "name": "vig-monk-portfolio",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "vue": "^3.4.21",
-    "vue-router": "^4.3.0",
-    "markdown-it": "^14.1.0",
-    "gray-matter": "^4.0.3"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.4",
-    "@types/node": "^20.11.30",
-    "@types/markdown-it": "^14.0.1",
-    "typescript": "^5.4.3",
-    "vue-tsc": "^2.0.6",
-    "vite": "^5.2.6",
-    "tailwindcss": "^3.4.3",
-    "postcss": "^8.4.38",
-    "autoprefixer": "^10.4.19",
-    "@tailwindcss/typography": "^0.5.13"
-  }
+    "name": "vig-monk-portfolio",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vue-tsc --noEmit && vite build",
+        "preview": "vite preview"
+    },
+
+    "dependencies": {
+        "@vueuse/motion": "^2.2.6",
+        "markdown-it": "^14.1.0",
+        "vue": "^3.4.21",
+        "vue-router": "^4.3.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/typography": "^0.5.13",
+        "@types/markdown-it": "^14.0.1",
+        "@types/node": "^20.11.30",
+        "@vitejs/plugin-vue": "^5.0.4",
+        "autoprefixer": "^10.4.19",
+        "postcss": "^8.4.38",
+        "tailwindcss": "^3.4.3",
+        "typescript": "^5.4.3",
+        "vite": "^5.2.6",
+        "vue-tsc": "^2.0.6"
+    }
 }
 </file>
 
@@ -1152,7 +1935,7 @@ export default {
         canvas: { DEFAULT: "#0A0E0C", raised: "#0F1510", inset: "#070A08" },
         border: { DEFAULT: "#1A2420", subtle: "#141A17" },
         ink: { DEFAULT: "#E8ECE9", muted: "#7A8A82", faint: "#4D5A53" },
-        accent: { DEFAULT: "#0D9D6F", dim: "#0A7A57", bright: "#14C088" }
+        accent: { DEFAULT: "#16B696", dim: "#115F50", bright: "#29E0BC" }
       },
       fontFamily: {
         display: ["Inter Tight", "Inter", "system-ui", "sans-serif"],
@@ -1168,36 +1951,6 @@ export default {
   },
   plugins: [require("@tailwindcss/typography")]
 } satisfies Config;
-</file>
-
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "moduleResolution": "Bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "preserve",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@content/*": ["content/*"]
-    }
-  },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
 </file>
 
 <file path="tsconfig.node.json">
@@ -1232,6 +1985,68 @@ export default defineConfig({
     port: 5173
   }
 });
+</file>
+
+<file path="src/router/index.ts">
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
+
+const routes: RouteRecordRaw[] = [
+  { path: "/", name: "home", component: () => import("@/views/HomeView.vue") },
+  { path: "/about", name: "about", component: () => import("@/views/AboutView.vue") },
+  { path: "/projects", name: "projects", component: () => import("@/views/ProjectsView.vue") },
+  {
+    path: "/projects/:slug",
+    name: "project-detail",
+    component: () => import("@/views/ProjectDetailView.vue"),
+    props: true
+  },
+  { path: "/contact", name: "contact", component: () => import("@/views/ContactView.vue") },
+  { path: "/:pathMatch(.*)*", name: "not-found", component: () => import("@/views/NotFoundView.vue") },
+  { path: "/dev", name: "dev-notes", component: () => import("@/views/DevNotesView.vue") },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, _from, savedPosition) {
+  if (savedPosition) return savedPosition;
+  if (to.hash) return { el: to.hash, behavior: "smooth" };
+  return { top: 0 };
+}
+});
+
+export default router;
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@content/*": ["content/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
 </file>
 
 </files>

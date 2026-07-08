@@ -9,7 +9,7 @@ export default {
         canvas: { DEFAULT: "#0A0E0C", raised: "#0F1510", inset: "#070A08" },
         border: { DEFAULT: "#1A2420", subtle: "#141A17" },
         ink: { DEFAULT: "#E8ECE9", muted: "#7A8A82", faint: "#4D5A53" },
-        accent: { DEFAULT: "#0D9D6F", dim: "#0A7A57", bright: "#14C088" }
+        accent: { DEFAULT: "#16B696", dim: "#115F50", bright: "#29E0BC" }
       },
       fontFamily: {
         display: ["Inter Tight", "Inter", "system-ui", "sans-serif"],

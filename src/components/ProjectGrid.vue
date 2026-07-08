@@ -7,6 +7,14 @@ defineProps<{ projects: ProjectFrontmatter[] }>();
 
 <template>
   <div class="grid gap-6 sm:grid-cols-2">
-    <ProjectCard v-for="project in projects" :key="project.slug" :project="project" />
+    <div
+      v-for="(project, i) in projects"
+      :key="project.slug"
+      v-motion
+      :initial="{ opacity: 0, y: 24 }"
+      :visible-once="{ opacity: 1, y: 0, transition: { duration: 600, delay: i * 100 } }"
+    >
+      <ProjectCard :project="project" />
+    </div>
   </div>
 </template>

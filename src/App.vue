@@ -2,13 +2,19 @@
 import AppHeader from "@/components/AppHeader.vue";
 import AppFooter from "@/components/AppFooter.vue";
 import MobileMenu from "@/components/MobileMenu.vue";
+import ScrollProgress from "@/components/ScrollProgress.vue";
+import CommandPalette from "@/components/CommandPalette.vue";
+import KonamiEasterEgg from "@/components/KonamiEasterEgg.vue";
 </script>
 
 <template>
-  <AppHeader />
-  <MobileMenu />
-  <main>
-    <RouterView />
-  </main>
-  <AppFooter />
+    <ScrollProgress />
+    <AppHeader />
+    <MobileMenu />
+    <CommandPalette />
+    <KonamiEasterEgg />
+    <main>
+        <RouterView />
+    </main>
+    <AppFooter />
 </template>

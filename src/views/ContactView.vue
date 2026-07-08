@@ -36,7 +36,7 @@ import { ref } from "vue";
       <div>
         <h2 class="mb-4 text-lg font-semibold text-ink">Reach me directly</h2>
         <ul class="space-y-3 text-sm">
-          <li><a href="mailto:hello@vig-monk.dev" class="text-ink-muted hover:text-ink">hello@vig-monk.dev</a></li>
+          <li><a href="mailto:hello@vig-monk.dev" class="text-ink-muted hover:text-ink">ludwigmaingi@gmail.com</a></li>
           <li><a href="https://github.com/Vig-Monk" target="_blank" rel="noopener noreferrer" class="text-ink-muted hover:text-ink">github.com/Vig-Monk</a></li>
         </ul>
       </div>
