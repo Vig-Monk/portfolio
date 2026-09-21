@@ -1,8 +1,15 @@
 import type { Config } from "tailwindcss";
+import typography from "@tailwindcss/typography";
 
 export default {
   darkMode: "class",
-  content: ["./index.html", "./src/**/*.{vue,ts}"],
+  content: [
+    "./components/**/*.{vue,js,ts}",
+    "./layouts/**/*.vue",
+    "./pages/**/*.vue",
+    "./app.vue",
+    "./plugins/**/*.{js,ts}"
+  ],
   theme: {
     extend: {
       colors: {
@@ -23,5 +30,5 @@ export default {
       maxWidth: { content: "68rem" }
     }
   },
-  plugins: [require("@tailwindcss/typography")]
+  plugins: [typography]
 } satisfies Config;

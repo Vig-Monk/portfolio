@@ -102,6 +102,146 @@ vite.config.ts
 <files>
 This section contains the contents of the repository's files.
 
+<file path="content/projects/soko-platform.md">
+---
+title: "Soko Platform"
+slug: "soko-platform"
+summary: "A multi-tenant SaaS API for East African commerce, starting with fresh produce traders at Wakulima Market."
+categories: ["SaaS", "Backend"]
+techStack: ["TypeScript", "Express", "PostgreSQL", "Neon", "Render"]
+architectureHighlights: ["Multi-tenancy", "Branded ID types", "ORM-free SQL", "Migrations"]
+githubUrl: ""
+demoUrl: ""
+featured: true
+order: 1
+---
+
+## Overview
+
+Soko is a multi-tenant SaaS API built for East African commerce, with the
+first target market being fresh produce traders at Wakulima Market in
+Nairobi. I worked there as a market porter, which is where the idea — and
+the conviction that the problem is real — came from.
+
+## Problem
+
+Small traders at markets like Wakulima run on cash, memory, and paper. There's
+no shared system for tracking inventory, orders, or basic sales records across
+multiple traders or stalls, and most off-the-shelf SaaS tools assume a single
+business owner rather than many independent tenants sharing infrastructure.
+
+## Solution
+
+A multi-tenant API where each trader's data is strictly isolated by
+organization, but the underlying infrastructure — database, auth, deployment —
+is shared. Built with strict-mode TypeScript throughout and branded types
+(`OrgId`, `UserId`) so tenant-scoping mistakes get caught at compile time
+rather than discovered in production.
+
+## Architecture
+
+- **No ORM, by design.** All database access goes through the raw `pg`
+  driver with hand-written SQL. This keeps every query's actual behavior
+  visible — no hidden N+1s, no abstraction hiding what's really being sent
+  to PostgreSQL.
+- **Branded types for tenant isolation.** `OrgId` and `UserId` are distinct
+  types at the TypeScript level, not just `string` aliases, so a function
+  expecting one can't silently accept the other.
+- **Migrations as the source of truth.** Schema changes go through versioned
+  PostgreSQL migrations rather than being inferred from model definitions.
+
+## Technical Challenges
+
+Designing tenant isolation that's enforced structurally rather than just by
+convention was the central challenge — it's easy to add a `WHERE org_id = ?`
+clause everywhere, and just as easy to forget it once. Branded types push
+that check earlier, into the type system, without needing a row-level
+security layer for the current stage of the project.
+
+## Lessons Learned
+
+Committing to "no ORM" early forced a clearer mental model of what the
+database is actually doing on every request — useful discipline, even though
+it means writing more SQL by hand. The tradeoff has been worth it for a
+system where correctness of tenant boundaries matters more than development
+speed.
+
+## Stack
+
+TypeScript · Express · PostgreSQL (raw `pg`) · Neon · Render
+</file>
+
+<file path="public/robots.txt">
+User-agent: *
+Allow: /
+
+Sitemap: https://vig-monk.dev/sitemap.xml
+</file>
+
+<file path="public/sitemap.xml">
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://vig-monk.dev/</loc><priority>1.0</priority></url>
+  <url><loc>https://vig-monk.dev/about</loc><priority>0.8</priority></url>
+  <url><loc>https://vig-monk.dev/projects</loc><priority>0.9</priority></url>
+  <url><loc>https://vig-monk.dev/contact</loc><priority>0.7</priority></url>
+</urlset>
+</file>
+
+<file path="src/components/AppFooter.vue">
+<script setup lang="ts">
+const year = new Date().getFullYear();
+</script>
+
+<template>
+  <footer class="border-t border-border">
+    <div class="container-page flex flex-col items-center justify-between gap-4 py-10 sm:flex-row">
+      <p class="font-mono text-sm text-ink-muted">&copy; {{ year }} Lu. Built with Vue 3 &amp; TypeScript.</p>
+      <div class="flex gap-6 text-sm text-ink-muted">
+        <a href="https://github.com/Vig-Monk" target="_blank" rel="noopener noreferrer" class="hover:text-ink">GitHub</a>
+        <RouterLink to="/contact" class="hover:text-ink">Contact</RouterLink>
+      </div>
+    </div>
+  </footer>
+</template>
+</file>
+
+<file path="src/components/BaseButton.vue">
+<script setup lang="ts">
+import { computed } from "vue";
+
+interface Props {
+  variant?: "primary" | "secondary";
+  to?: string;
+  href?: string;
+  type?: "button" | "submit";
+}
+
+const props = withDefaults(defineProps<Props>(), { variant: "primary", type: "button" });
+
+const tag = computed(() => (props.to ? "router-link" : props.href ? "a" : "button"));
+
+const variantClasses = computed(() =>
+  props.variant === "primary"
+    ? "bg-accent text-canvas hover:bg-accent-bright"
+    : "bg-transparent border border-border text-ink hover:border-accent-dim hover:text-accent-bright"
+);
+</script>
+
+<template>
+  <component
+    :is="tag"
+    :to="to"
+    :href="href"
+    :type="!to && !href ? type : undefined"
+    class="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200"
+    :class="variantClasses"
+  >
+    <slot />
+  </component>
+</template>
+</file>
+
 <file path="src/components/CommandPalette.vue">
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
@@ -271,6 +411,22 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
 <template></template>
 </file>
 
+<file path="src/components/MarkdownRenderer.vue">
+<script setup lang="ts">
+import { computed } from "vue";
+import MarkdownIt from "markdown-it";
+
+const props = defineProps<{ source: string }>();
+
+const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
+const html = computed(() => md.render(props.source));
+</script>
+
+<template>
+  <div class="markdown-body" v-html="html" />
+</template>
+</file>
+
 <file path="src/components/MetricCounter.vue">
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
@@ -318,6 +474,46 @@ onUnmounted(() => observer?.disconnect());
 </template>
 </file>
 
+<file path="src/components/MobileMenu.vue">
+<script setup lang="ts">
+import { useMobileMenu } from "@/composables/useMobileMenu";
+
+const { isOpen, close } = useMobileMenu();
+
+const navItems = [
+  { to: "/", label: "Home" },
+  { to: "/projects", label: "Projects" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" }
+];
+</script>
+
+<template>
+  <div v-if="isOpen" class="fixed inset-0 z-50 bg-canvas-inset/80 md:hidden" @click="close" />
+
+  <nav
+    v-if="isOpen"
+    class="fixed right-0 top-0 z-50 h-full w-[78%] max-w-xs border-l border-border bg-canvas-raised p-6 md:hidden"
+    aria-label="Mobile"
+  >
+    <button type="button" aria-label="Close menu" class="mb-8 block text-ink-muted" @click="close">
+      ✕
+    </button>
+    <ul class="flex flex-col gap-1">
+      <li v-for="item in navItems" :key="item.to">
+        <RouterLink
+          :to="item.to"
+          class="block rounded-lg px-3 py-3 text-base text-ink hover:bg-canvas-inset hover:text-accent-bright"
+          @click="close"
+        >
+          {{ item.label }}
+        </RouterLink>
+      </li>
+    </ul>
+  </nav>
+</template>
+</file>
+
 <file path="src/components/ScrollProgress.vue">
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
@@ -358,6 +554,18 @@ onUnmounted(() => {
 </template>
 </file>
 
+<file path="src/components/TechBadge.vue">
+<script setup lang="ts">
+defineProps<{ label: string }>();
+</script>
+
+<template>
+  <span class="inline-flex items-center rounded-md border border-border bg-canvas-inset px-2.5 py-1 font-mono text-xs text-ink-muted">
+    {{ label }}
+  </span>
+</template>
+</file>
+
 <file path="src/composables/useCommandPalette.ts">
 import { ref } from "vue";
 
@@ -377,6 +585,119 @@ export function useCommandPalette() {
     isOpen.value ? close() : open();
   }
   return { isOpen, open, close, toggle };
+}
+</file>
+
+<file path="src/composables/useMobileMenu.ts">
+import { ref } from "vue";
+
+// Module-level state, shared by every component that imports this —
+// the simplest possible substitute for a Pinia store when you only
+// have one small piece of cross-cutting UI state.
+const isOpen = ref(false);
+
+export function useMobileMenu() {
+  function open() {
+    isOpen.value = true;
+    document.body.style.overflow = "hidden";
+  }
+  function close() {
+    isOpen.value = false;
+    document.body.style.overflow = "";
+  }
+  function toggle() {
+    isOpen.value ? close() : open();
+  }
+  return { isOpen, open, close, toggle };
+}
+</file>
+
+<file path="src/types/project.ts">
+export type ProjectCategory = "SaaS" | "Backend" | "Full Stack";
+
+export interface ProjectFrontmatter {
+  title: string;
+  slug: string;
+  summary: string;
+  categories: ProjectCategory[];
+  techStack: string[];
+  architectureHighlights: string[];
+  githubUrl?: string;
+  demoUrl?: string;
+  featured?: boolean;
+  order?: number;
+}
+
+export interface ProjectEntry {
+  frontmatter: ProjectFrontmatter;
+  content: string;
+}
+</file>
+
+<file path="src/utils/frontmatter.ts">
+/**
+ * Minimal, browser-safe frontmatter parser.
+ * Replaces gray-matter, which depends on Node's Buffer global and
+ * crashes when bundled for the browser by Vite.
+ *
+ * Supports the subset of YAML our project frontmatter actually uses:
+ * - flat string values:      title: "Soko Platform"
+ * - booleans:                featured: true
+ * - numbers:                 order: 1
+ * - inline string arrays:    categories: ["SaaS", "Backend"]
+ */
+export function parseFrontmatter<T>(raw: string): { data: T; content: string } {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+
+  if (!match) {
+    return { data: {} as T, content: raw };
+  }
+
+  const [, frontmatterBlock, content] = match;
+  const data: Record<string, unknown> = {};
+
+  for (const line of (frontmatterBlock ?? "").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const separatorIndex = trimmed.indexOf(":");
+    if (separatorIndex === -1) continue;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    let value = trimmed.slice(separatorIndex + 1).trim();
+
+    data[key] = parseValue(value);
+  }
+
+  return { data: data as T, content: (content ?? "").trim() };
+}
+
+function parseValue(value: string): unknown {
+  // Inline array: ["SaaS", "Backend"]
+  if (value.startsWith("[") && value.endsWith("]")) {
+    const inner = value.slice(1, -1).trim();
+    if (!inner) return [];
+    return inner
+      .split(",")
+      .map((item) => stripQuotes(item.trim()))
+      .filter(Boolean);
+  }
+
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (value !== "" && !Number.isNaN(Number(value))) return Number(value);
+
+  return stripQuotes(value);
+}
+
+function stripQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
 }
 </file>
 
@@ -467,6 +788,70 @@ const experiments = [
 </template>
 </file>
 
+<file path="src/views/NotFoundView.vue">
+<script setup lang="ts">
+import { onMounted } from "vue";
+import BaseButton from "@/components/BaseButton.vue";
+
+onMounted(() => {
+  document.title = "Page Not Found — Lu";
+});
+</script>
+
+<template>
+  <section class="container-page flex min-h-[60vh] flex-col items-center justify-center text-center">
+    <p class="eyebrow mb-3">404</p>
+    <h1 class="mb-4 text-2xl font-semibold text-ink">Page not found</h1>
+    <p class="mb-8 text-ink-muted">That route doesn't exist.</p>
+    <BaseButton to="/">Back Home</BaseButton>
+  </section>
+</template>
+</file>
+
+<file path="index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>Lu — Backend & Systems Engineer</title>
+    <meta
+      name="description"
+      content="Designing APIs, databases, and systems that scale. Backend and SaaS engineering for East African businesses."
+    />
+    <link rel="canonical" href="https://vig-monk.dev/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Lu — Backend & Systems Engineer" />
+    <meta property="og:description" content="Designing APIs, databases, and systems that scale." />
+    <meta property="og:image" content="/og-default.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-canvas text-ink font-body antialiased">
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+</file>
+
+<file path="postcss.config.js">
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+};
+</file>
+
 <file path="tailind.config.ts">
 import type { Config } from "tailwindcss";
 
@@ -495,6 +880,40 @@ export default {
   },
   plugins: [require("@tailwindcss/typography")]
 } satisfies Config;
+</file>
+
+<file path="tsconfig.node.json">
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true
+  },
+  "include": ["vite.config.ts", "tailwind.config.ts"]
+}
+</file>
+
+<file path="vite.config.ts">
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@content": fileURLToPath(new URL("./content", import.meta.url))
+    }
+  },
+  assetsInclude: ["**/*.md"],
+  server: {
+    host: true,
+    port: 5173
+  }
+});
 </file>
 
 <file path="content/projects/joy-agency.md">
@@ -560,76 +979,7 @@ uploads through your own server.
 Vue 3 · Express · MongoDB · Cloudinary
 
 GitHub: [joy-agency](https://github.com/Vig-Monk/joy-agency-)
-Live Demo [joy-agency-](http://joyrecuitmentagency.vercel.app)
-</file>
-
-<file path="content/projects/soko-platform.md">
----
-title: "Soko Platform"
-slug: "soko-platform"
-summary: "A multi-tenant SaaS API for East African commerce, starting with fresh produce traders at Wakulima Market."
-categories: ["SaaS", "Backend"]
-techStack: ["TypeScript", "Express", "PostgreSQL", "Neon", "Render"]
-architectureHighlights: ["Multi-tenancy", "Branded ID types", "ORM-free SQL", "Migrations"]
-githubUrl: ""
-demoUrl: ""
-featured: true
-order: 1
----
-
-## Overview
-
-Soko is a multi-tenant SaaS API built for East African commerce, with the
-first target market being fresh produce traders at Wakulima Market in
-Nairobi. I worked there as a market porter, which is where the idea — and
-the conviction that the problem is real — came from.
-
-## Problem
-
-Small traders at markets like Wakulima run on cash, memory, and paper. There's
-no shared system for tracking inventory, orders, or basic sales records across
-multiple traders or stalls, and most off-the-shelf SaaS tools assume a single
-business owner rather than many independent tenants sharing infrastructure.
-
-## Solution
-
-A multi-tenant API where each trader's data is strictly isolated by
-organization, but the underlying infrastructure — database, auth, deployment —
-is shared. Built with strict-mode TypeScript throughout and branded types
-(`OrgId`, `UserId`) so tenant-scoping mistakes get caught at compile time
-rather than discovered in production.
-
-## Architecture
-
-- **No ORM, by design.** All database access goes through the raw `pg`
-  driver with hand-written SQL. This keeps every query's actual behavior
-  visible — no hidden N+1s, no abstraction hiding what's really being sent
-  to PostgreSQL.
-- **Branded types for tenant isolation.** `OrgId` and `UserId` are distinct
-  types at the TypeScript level, not just `string` aliases, so a function
-  expecting one can't silently accept the other.
-- **Migrations as the source of truth.** Schema changes go through versioned
-  PostgreSQL migrations rather than being inferred from model definitions.
-
-## Technical Challenges
-
-Designing tenant isolation that's enforced structurally rather than just by
-convention was the central challenge — it's easy to add a `WHERE org_id = ?`
-clause everywhere, and just as easy to forget it once. Branded types push
-that check earlier, into the type system, without needing a row-level
-security layer for the current stage of the project.
-
-## Lessons Learned
-
-Committing to "no ORM" early forced a clearer mental model of what the
-database is actually doing on every request — useful discipline, even though
-it means writing more SQL by hand. The tradeoff has been worth it for a
-system where correctness of tenant boundaries matters more than development
-speed.
-
-## Stack
-
-TypeScript · Express · PostgreSQL (raw `pg`) · Neon · Render
+Live Demo [joy-agency-](https://joyrecruitmentagency.vercel.app/)
 </file>
 
 <file path="content/projects/taskr.md">
@@ -687,41 +1037,6 @@ Vue 3 · Express · MongoDB · Node.js · Render · Vercel
 
 GitHub: [express-api-fundamentals](https://github.com/Vig-Monk/express-api-fundamentals)
 Live Demo [Ludwigs-tasky](http://ludwigs-tasky.vercel.app)
-</file>
-
-<file path="public/robots.txt">
-User-agent: *
-Allow: /
-
-Sitemap: https://vig-monk.dev/sitemap.xml
-</file>
-
-<file path="public/sitemap.xml">
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://vig-monk.dev/</loc><priority>1.0</priority></url>
-  <url><loc>https://vig-monk.dev/about</loc><priority>0.8</priority></url>
-  <url><loc>https://vig-monk.dev/projects</loc><priority>0.9</priority></url>
-  <url><loc>https://vig-monk.dev/contact</loc><priority>0.7</priority></url>
-</urlset>
-</file>
-
-<file path="src/components/AppFooter.vue">
-<script setup lang="ts">
-const year = new Date().getFullYear();
-</script>
-
-<template>
-  <footer class="border-t border-border">
-    <div class="container-page flex flex-col items-center justify-between gap-4 py-10 sm:flex-row">
-      <p class="font-mono text-sm text-ink-muted">&copy; {{ year }} Lu. Built with Vue 3 &amp; TypeScript.</p>
-      <div class="flex gap-6 text-sm text-ink-muted">
-        <a href="https://github.com/Vig-Monk" target="_blank" rel="noopener noreferrer" class="hover:text-ink">GitHub</a>
-        <RouterLink to="/contact" class="hover:text-ink">Contact</RouterLink>
-      </div>
-    </div>
-  </footer>
-</template>
 </file>
 
 <file path="src/components/AppHeader.vue">
@@ -813,42 +1128,6 @@ onUnmounted(() => {
 </template>
 </file>
 
-<file path="src/components/BaseButton.vue">
-<script setup lang="ts">
-import { computed } from "vue";
-
-interface Props {
-  variant?: "primary" | "secondary";
-  to?: string;
-  href?: string;
-  type?: "button" | "submit";
-}
-
-const props = withDefaults(defineProps<Props>(), { variant: "primary", type: "button" });
-
-const tag = computed(() => (props.to ? "router-link" : props.href ? "a" : "button"));
-
-const variantClasses = computed(() =>
-  props.variant === "primary"
-    ? "bg-accent text-canvas hover:bg-accent-bright"
-    : "bg-transparent border border-border text-ink hover:border-accent-dim hover:text-accent-bright"
-);
-</script>
-
-<template>
-  <component
-    :is="tag"
-    :to="to"
-    :href="href"
-    :type="!to && !href ? type : undefined"
-    class="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200"
-    :class="variantClasses"
-  >
-    <slot />
-  </component>
-</template>
-</file>
-
 <file path="src/components/BaseCard.vue">
 <script setup lang="ts">
 withDefaults(defineProps<{ hoverable?: boolean }>(), { hoverable: true });
@@ -863,62 +1142,6 @@ withDefaults(defineProps<{ hoverable?: boolean }>(), { hoverable: true });
   >
     <slot />
   </div>
-</template>
-</file>
-
-<file path="src/components/MarkdownRenderer.vue">
-<script setup lang="ts">
-import { computed } from "vue";
-import MarkdownIt from "markdown-it";
-
-const props = defineProps<{ source: string }>();
-
-const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
-const html = computed(() => md.render(props.source));
-</script>
-
-<template>
-  <div class="markdown-body" v-html="html" />
-</template>
-</file>
-
-<file path="src/components/MobileMenu.vue">
-<script setup lang="ts">
-import { useMobileMenu } from "@/composables/useMobileMenu";
-
-const { isOpen, close } = useMobileMenu();
-
-const navItems = [
-  { to: "/", label: "Home" },
-  { to: "/projects", label: "Projects" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" }
-];
-</script>
-
-<template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 bg-canvas-inset/80 md:hidden" @click="close" />
-
-  <nav
-    v-if="isOpen"
-    class="fixed right-0 top-0 z-50 h-full w-[78%] max-w-xs border-l border-border bg-canvas-raised p-6 md:hidden"
-    aria-label="Mobile"
-  >
-    <button type="button" aria-label="Close menu" class="mb-8 block text-ink-muted" @click="close">
-      ✕
-    </button>
-    <ul class="flex flex-col gap-1">
-      <li v-for="item in navItems" :key="item.to">
-        <RouterLink
-          :to="item.to"
-          class="block rounded-lg px-3 py-3 text-base text-ink hover:bg-canvas-inset hover:text-accent-bright"
-          @click="close"
-        >
-          {{ item.label }}
-        </RouterLink>
-      </li>
-    </ul>
-  </nav>
 </template>
 </file>
 
@@ -1020,44 +1243,7 @@ defineProps<{ projects: ProjectFrontmatter[] }>();
 </template>
 </file>
 
-<file path="src/components/TechBadge.vue">
-<script setup lang="ts">
-defineProps<{ label: string }>();
-</script>
-
-<template>
-  <span class="inline-flex items-center rounded-md border border-border bg-canvas-inset px-2.5 py-1 font-mono text-xs text-ink-muted">
-    {{ label }}
-  </span>
-</template>
-</file>
-
-<file path="src/composables/useMobileMenu.ts">
-import { ref } from "vue";
-
-// Module-level state, shared by every component that imports this —
-// the simplest possible substitute for a Pinia store when you only
-// have one small piece of cross-cutting UI state.
-const isOpen = ref(false);
-
-export function useMobileMenu() {
-  function open() {
-    isOpen.value = true;
-    document.body.style.overflow = "hidden";
-  }
-  function close() {
-    isOpen.value = false;
-    document.body.style.overflow = "";
-  }
-  function toggle() {
-    isOpen.value ? close() : open();
-  }
-  return { isOpen, open, close, toggle };
-}
-</file>
-
 <file path="src/content/projects.ts">
-// src/content/projects.ts
 import { parseFrontmatter } from "@/utils/frontmatter";
 import type { ProjectFrontmatter } from "@/types/project";
 
@@ -1073,7 +1259,6 @@ export const projects: ProjectFrontmatter[] = Object.values(modules)
 
 export const featuredProjects = projects.filter((p) => p.featured);
 
-// Lazy — only fetched and parsed when someone actually opens a case study.
 const lazyModules = import.meta.glob("@content/projects/*.md", {
   query: "?raw",
   import: "default"
@@ -1088,95 +1273,6 @@ export async function getProjectBySlug(slug: string) {
 }
 </file>
 
-<file path="src/types/project.ts">
-export type ProjectCategory = "SaaS" | "Backend" | "Full Stack";
-
-export interface ProjectFrontmatter {
-  title: string;
-  slug: string;
-  summary: string;
-  categories: ProjectCategory[];
-  techStack: string[];
-  architectureHighlights: string[];
-  githubUrl?: string;
-  demoUrl?: string;
-  featured?: boolean;
-  order?: number;
-}
-
-export interface ProjectEntry {
-  frontmatter: ProjectFrontmatter;
-  content: string;
-}
-</file>
-
-<file path="src/utils/frontmatter.ts">
-/**
- * Minimal, browser-safe frontmatter parser.
- * Replaces gray-matter, which depends on Node's Buffer global and
- * crashes when bundled for the browser by Vite.
- *
- * Supports the subset of YAML our project frontmatter actually uses:
- * - flat string values:      title: "Soko Platform"
- * - booleans:                featured: true
- * - numbers:                 order: 1
- * - inline string arrays:    categories: ["SaaS", "Backend"]
- */
-export function parseFrontmatter<T>(raw: string): { data: T; content: string } {
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
-
-  if (!match) {
-    return { data: {} as T, content: raw };
-  }
-
-  const [, frontmatterBlock, content] = match;
-  const data: Record<string, unknown> = {};
-
-  for (const line of (frontmatterBlock ?? "").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-
-    const separatorIndex = trimmed.indexOf(":");
-    if (separatorIndex === -1) continue;
-
-    const key = trimmed.slice(0, separatorIndex).trim();
-    let value = trimmed.slice(separatorIndex + 1).trim();
-
-    data[key] = parseValue(value);
-  }
-
-  return { data: data as T, content: (content ?? "").trim() };
-}
-
-function parseValue(value: string): unknown {
-  // Inline array: ["SaaS", "Backend"]
-  if (value.startsWith("[") && value.endsWith("]")) {
-    const inner = value.slice(1, -1).trim();
-    if (!inner) return [];
-    return inner
-      .split(",")
-      .map((item) => stripQuotes(item.trim()))
-      .filter(Boolean);
-  }
-
-  if (value === "true") return true;
-  if (value === "false") return false;
-  if (value !== "" && !Number.isNaN(Number(value))) return Number(value);
-
-  return stripQuotes(value);
-}
-
-function stripQuotes(value: string): string {
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1);
-  }
-  return value;
-}
-</file>
-
 <file path="src/views/AboutView.vue">
 <script setup lang="ts">
 import { onMounted } from "vue";
@@ -1188,10 +1284,10 @@ onMounted(() => {
 });
 
 const metrics = [
-  { label: "Projects Shipped", value: 0, suffix: "" }, // TODO: count real deployed/production-ready projects (Taskr, Joy Agency, Soko once live, etc.)
-  { label: "Auth Systems Built", value: 0, suffix: "" }, // TODO: JWT/refresh-rotation implementations across projects
-  { label: "Databases Designed", value: 0, suffix: "" }, // TODO: distinct schemas you've designed from scratch
-  { label: "Years Writing Code", value: 0, suffix: "" } // TODO: honest count, doesn't need to be impressive to be credible
+  { label: "Projects Shipped", value: 3, suffix: "" }, // TODO: count real deployed/production-ready projects (Taskr, Joy Agency, Soko once live, etc.)
+  { label: "Auth Systems Built", value: 4, suffix: "" }, // TODO: JWT/refresh-rotation implementations across projects
+  { label: "Databases Designed", value: 4, suffix: "" }, // TODO: distinct schemas you've designed from scratch
+  { label: "Years Writing Code", value: 1, suffix: "" } // TODO: honest count, doesn't need to be impressive to be credible
 ];
 
 const journey = [
@@ -1597,7 +1693,7 @@ const stack = ["TypeScript", "Node.js", "Express", "PostgreSQL", "Redis", "Docke
     >
       Featured Projects
     </h2>
-    <ProjectGrid :projects="featuredProjects.map((p) => p.frontmatter)" />
+    <ProjectGrid :projects="featuredProjects" />
   </section>
 
   <section class="container-page py-24 text-center">
@@ -1608,50 +1704,54 @@ const stack = ["TypeScript", "Node.js", "Express", "PostgreSQL", "Redis", "Docke
 </template>
 </file>
 
-<file path="src/views/NotFoundView.vue">
-<script setup lang="ts">
-import { onMounted } from "vue";
-import BaseButton from "@/components/BaseButton.vue";
-
-onMounted(() => {
-  document.title = "Page Not Found — Lu";
-});
-</script>
-
-<template>
-  <section class="container-page flex min-h-[60vh] flex-col items-center justify-center text-center">
-    <p class="eyebrow mb-3">404</p>
-    <h1 class="mb-4 text-2xl font-semibold text-ink">Page not found</h1>
-    <p class="mb-8 text-ink-muted">That route doesn't exist.</p>
-    <BaseButton to="/">Back Home</BaseButton>
-  </section>
-</template>
-</file>
-
 <file path="src/views/ProjectDetailView.vue">
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import TechBadge from "@/components/TechBadge.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import { getProjectBySlug } from "@/content/projects";
+import type { ProjectFrontmatter } from "@/types/project";
 
 const props = defineProps<{ slug: string }>();
 const router = useRouter();
-const entry = computed(() => getProjectBySlug(props.slug));
 
-onMounted(() => {
-  if (!entry.value) {
+const entry = ref<{ frontmatter: ProjectFrontmatter; content: string } | null>(null);
+const loading = ref(true);
+
+let requestToken = 0;
+
+async function load(slug: string) {
+  const token = ++requestToken;
+  loading.value = true;
+  entry.value = null;
+
+  const result = await getProjectBySlug(slug);
+
+  // A newer navigation started while this one was in flight — drop it.
+  if (token !== requestToken) return;
+
+  if (!result) {
+    loading.value = false;
     router.replace({ name: "not-found" });
     return;
   }
-  document.title = `${entry.value.frontmatter.title} — Lu`;
-});
+
+  entry.value = result;
+  loading.value = false;
+  document.title = `${result.frontmatter.title} — Lu`;
+}
+
+watch(() => props.slug, (slug) => load(slug), { immediate: true });
 </script>
 
 <template>
-  <article v-if="entry" class="container-page py-20">
+  <article v-if="loading" class="container-page py-20">
+    <p class="text-ink-muted">Loading…</p>
+  </article>
+
+  <article v-else-if="entry" class="container-page py-20">
     <p class="eyebrow mb-3">{{ entry.frontmatter.categories.join(" · ") }}</p>
     <h1 class="mb-4 text-display-lg font-display font-semibold text-ink">
       {{ entry.frontmatter.title }}
@@ -1693,10 +1793,8 @@ const categories: ProjectCategory[] = ["SaaS", "Backend", "Full Stack"];
 const activeCategory = ref<ProjectCategory | "All">("All");
 
 const filtered = computed(() => {
-  if (activeCategory.value === "All") return projects.map((p) => p.frontmatter);
-  return projects
-    .filter((p) => p.frontmatter.categories.includes(activeCategory.value as ProjectCategory))
-    .map((p) => p.frontmatter);
+  if (activeCategory.value === "All") return projects;
+  return projects.filter((p) => p.categories.includes(activeCategory.value as ProjectCategory));
 });
 </script>
 
@@ -1846,41 +1944,6 @@ createApp(App).use(router).use(MotionPlugin).mount("#app");
 }
 </file>
 
-<file path="index.html">
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
-    <title>Lu — Backend & Systems Engineer</title>
-    <meta
-      name="description"
-      content="Designing APIs, databases, and systems that scale. Backend and SaaS engineering for East African businesses."
-    />
-    <link rel="canonical" href="https://vig-monk.dev/" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Lu — Backend & Systems Engineer" />
-    <meta property="og:description" content="Designing APIs, databases, and systems that scale." />
-    <meta property="og:image" content="/og-default.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-canvas text-ink font-body antialiased">
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
-</html>
-</file>
-
 <file path="package.json">
 {
     "name": "vig-monk-portfolio",
@@ -1892,10 +1955,10 @@ createApp(App).use(router).use(MotionPlugin).mount("#app");
         "build": "vue-tsc --noEmit && vite build",
         "preview": "vite preview"
     },
-
     "dependencies": {
         "@vueuse/motion": "^2.2.6",
         "markdown-it": "^14.1.0",
+        "nuxt": "^4.5.2",
         "vue": "^3.4.21",
         "vue-router": "^4.3.0"
     },
@@ -1912,15 +1975,6 @@ createApp(App).use(router).use(MotionPlugin).mount("#app");
         "vue-tsc": "^2.0.6"
     }
 }
-</file>
-
-<file path="postcss.config.js">
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {}
-  }
-};
 </file>
 
 <file path="tailwind.config.ts">
@@ -1953,38 +2007,35 @@ export default {
 } satisfies Config;
 </file>
 
-<file path="tsconfig.node.json">
+<file path="tsconfig.json">
 {
   "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
+    "target": "ES2022",
+    "useDefineForClassFields": true,
     "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "skipLibCheck": true,
     "moduleResolution": "Bundler",
-    "strict": true
-  },
-  "include": ["vite.config.ts", "tailwind.config.ts"]
-}
-</file>
-
-<file path="vite.config.ts">
-import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-
-export default defineConfig({
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@content": fileURLToPath(new URL("./content", import.meta.url))
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@content/*": ["content/*"]
     }
   },
-  assetsInclude: ["**/*.md"],
-  server: {
-    host: true,
-    port: 5173
-  }
-});
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
 </file>
 
 <file path="src/router/index.ts">
@@ -2016,37 +2067,6 @@ const router = createRouter({
 });
 
 export default router;
-</file>
-
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
-    "skipLibCheck": true,
-    "moduleResolution": "Bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "preserve",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@content/*": ["content/*"]
-    }
-  },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
 </file>
 
 </files>

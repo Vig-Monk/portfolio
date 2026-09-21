@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vig-monk.dev/sitemap.xml
+Sitemap: https://ludwigmaingi.vercel.app/sitemap.xml
