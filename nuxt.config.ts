@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   devtools: { enabled: false },
 
-  // Only use Tailwind module here (motion is handled safely via plugins to prevent SSR crashes)
+  // Tailwind module (Motion is handled safely via plugins to prevent SSR errors)
   modules: ["@nuxtjs/tailwindcss"],
 
   css: ["~/assets/css/main.css"],
@@ -12,6 +12,11 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: "en" },
       title: "Ludwig Maingi — Backend & Systems Engineer",
       meta: [
+        // Google Search Console Verification
+        {
+          name: "google-site-verification",
+          content: "aFmrr8V5d06SudLs6m_X_S7HaHFDdJ88wgCKrcb64Hw"
+        },
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
@@ -19,7 +24,7 @@ export default defineNuxtConfig({
           content:
             "Designing scalable APIs, robust databases, and multi-tenant SaaS systems. Specializing in TypeScript, Node.js, and raw PostgreSQL. Available for global remote contracts."
         },
-        // Open Graph / Social SEO
+        // Open Graph / Social Media Preview
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: "Ludwig Maingi" },
         { property: "og:title", content: "Ludwig Maingi — Backend & Systems Engineer" },
@@ -57,12 +62,12 @@ export default defineNuxtConfig({
     }
   },
 
-  // Parse markdown files as raw strings
+  // Parse markdown files as raw text
   vite: {
     assetsInclude: ["**/*.md"]
   },
 
-  // Pre-render static HTML for every route for international search engines
+  // Pre-render static HTML for every route for search engines
   nitro: {
     prerender: {
       routes: [
