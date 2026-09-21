@@ -2,6 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   devtools: { enabled: false },
 
+  // Only use Tailwind module here (motion is handled safely via plugins to prevent SSR crashes)
   modules: ["@nuxtjs/tailwindcss"],
 
   css: ["~/assets/css/main.css"],
@@ -16,20 +17,33 @@ export default defineNuxtConfig({
         {
           name: "description",
           content:
-            "Designing scalable APIs, robust databases, and multi-tenant SaaS systems. Specializing in TypeScript, Node.js, and raw PostgreSQL."
+            "Designing scalable APIs, robust databases, and multi-tenant SaaS systems. Specializing in TypeScript, Node.js, and raw PostgreSQL. Available for global remote contracts."
         },
+        // Open Graph / Social SEO
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: "Ludwig Maingi" },
         { property: "og:title", content: "Ludwig Maingi — Backend & Systems Engineer" },
         {
           property: "og:description",
-          content: "Designing APIs, databases, and systems that scale."
+          content:
+            "Designing scalable APIs, robust databases, and multi-tenant SaaS systems. Available for global remote contracts."
         },
         {
           property: "og:image",
           content: "https://ludwigmaingi.vercel.app/og-default.png"
         },
-        { name: "twitter:card", content: "summary_large_image" }
+        { property: "og:url", content: "https://ludwigmaingi.vercel.app/" },
+        // Twitter
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: "Ludwig Maingi — Backend & Systems Engineer" },
+        {
+          name: "twitter:description",
+          content: "Designing APIs, databases, and systems that scale."
+        },
+        {
+          name: "twitter:image",
+          content: "https://ludwigmaingi.vercel.app/og-default.png"
+        }
       ],
       link: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -43,10 +57,12 @@ export default defineNuxtConfig({
     }
   },
 
+  // Parse markdown files as raw strings
   vite: {
     assetsInclude: ["**/*.md"]
   },
 
+  // Pre-render static HTML for every route for international search engines
   nitro: {
     prerender: {
       routes: [
