@@ -65,16 +65,20 @@ function handleSubmit() {
         <div class="rounded-xl border border-border bg-canvas-raised p-5">
           <h3 class="mb-2 text-sm font-semibold text-ink">Timezone &amp; Collaboration</h3>
           <p class="mb-2 text-xs leading-relaxed text-ink-muted">
-            Based in Nairobi, Kenya (<strong class="text-ink">UTC+3 / EAT</strong>).
+            Remote-first, working from <strong class="text-ink">UTC+3 (EAT)</strong> — async-friendly and comfortable across regions.
           </p>
           <ul class="space-y-1.5 text-xs text-ink-muted">
             <li class="flex items-center gap-2">
               <span class="text-accent-bright">✓</span>
-              <span><strong>UK &amp; Europe (GMT/BST/CET):</strong> Full working day alignment (1–2 hour difference).</span>
+              <span><strong>UK &amp; Europe (GMT/BST/CET):</strong> Full working-day overlap (0–2 hour difference).</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-accent-bright">✓</span>
-              <span><strong>US East Coast (EST/EDT):</strong> 3–4 hours of direct morning overlap.</span>
+              <span><strong>US East Coast (EST/EDT):</strong> Direct morning overlap.</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-accent-bright">✓</span>
+              <span><strong>US West Coast &amp; APAC:</strong> Async-first with written updates and scheduled overlap windows.</span>
             </li>
           </ul>
         </div>

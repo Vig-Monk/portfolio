@@ -1,4 +1,10 @@
-export type ProjectCategory = "SaaS" | "Backend" | "Full Stack";
+export type ProjectCategory =
+  | "SaaS"
+  | "Backend"
+  | "Full Stack"
+  | "E-commerce"
+  | "Digital Products"
+  | "Tooling";
 
 export interface ProjectFrontmatter {
   title: string;

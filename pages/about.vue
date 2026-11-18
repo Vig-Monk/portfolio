@@ -2,9 +2,9 @@
 useSeoMeta({
   title: "About — Ludwig Maingi",
   description:
-    "Self-taught backend and systems engineer based in Nairobi. Building multi-tenant SaaS, database architectures, and APIs.",
+    "Self-taught backend and systems engineer. Building multi-tenant SaaS, e-commerce platforms, database architectures, and APIs — remote-first, worldwide.",
   ogTitle: "About — Ludwig Maingi",
-  ogDescription: "Self-taught backend and systems engineer based in Nairobi.",
+  ogDescription: "Self-taught backend and systems engineer. Remote-first, worldwide.",
   ogUrl: "https://ludwigmaingi.vercel.app/about"
 });
 
@@ -13,10 +13,10 @@ useHead({
 });
 
 const metrics = [
-  { label: "Projects Shipped", value: 3, suffix: "" },
+  { label: "Projects Shipped", value: 7, suffix: "" },
   { label: "Auth Systems Built", value: 4, suffix: "" },
-  { label: "Databases Designed", value: 4, suffix: "" },
-  { label: "Years Writing Code", value: 1, suffix: "" }
+  { label: "Databases Designed", value: 5, suffix: "" },
+  { label: "Products Shipped", value: 11, suffix: "" }
 ];
 
 const journey = [
@@ -33,17 +33,22 @@ const journey = [
   {
     period: "First real client",
     title: "Shipped Joy Agency",
-    body: "A domestic staffing platform (Vue 3, Express, MongoDB, Cloudinary) built and deployed for an actual Nairobi client — resolving real production issues, not toy-project ones: CORS, SPA rewrites, upload failures."
+    body: "A staffing platform (Vue 3, Express, MongoDB, Cloudinary) built and deployed for a real client — resolving real production issues, not toy-project ones: CORS, SPA rewrites, upload failures."
   },
   {
     period: "Now",
     title: "Designing Soko",
-    body: "A multi-tenant SaaS platform for East African market traders, TypeScript and raw PostgreSQL by design — no ORM, branded ID types, explicit transactions. Built from the inside: I worked as a porter at the market it's designed for."
+    body: "A multi-tenant SaaS platform for commerce, TypeScript and raw PostgreSQL by design — no ORM, branded ID types, explicit transactions. Built from the inside: I worked inside informal market commerce, which is where the problem became real to me."
+  },
+  {
+    period: "Products",
+    title: "Launched the Digital Product Suite",
+    body: "Extracted the production internals of Soko and Flemela into eleven standalone tools and SaaS kits — tested, documented, and shipped as digital products on Gumroad and Whop."
   },
   {
     period: "Ongoing",
     title: "Deepening the fundamentals",
-    body: "Structured DSA study and distributed-systems concepts, anchored to Soko, Joy Agency, and Taskr as real reference points rather than abstract exercises."
+    body: "Structured DSA study and distributed-systems concepts, anchored to Soko, Flemela, and the Digital Product Suite as real reference points rather than abstract exercises."
   }
 ];
 
@@ -90,8 +95,8 @@ const architectureTopics = [
 
     <div class="markdown-body mb-16 max-w-2xl">
       <p>
-        I'm a self-taught fullstack developer based in Nairobi, building toward
-        freelance work for East African SMEs and international remote teams. My background is in forex and
+        I'm a self-taught fullstack developer working remote-first with clients and
+        teams worldwide. My background is in forex and
         futures trading, which is where the technical-analysis habit of mind
         came from — reading systems for risk before reading them for features.
       </p>
@@ -102,10 +107,9 @@ const architectureTopics = [
         running rather than trusting a framework to hide it from me.
       </p>
       <p>
-        Before this, I worked as a market porter at Wakulima Market in Nairobi —
-        which is part of why East African commerce and the M-Pesa / Daraja API
-        ecosystem are a focus rather than an afterthought. I've seen the target
-        market from the inside.
+        Before this, I worked inside informal market commerce —
+        which is why commerce infrastructure is a focus rather than an afterthought.
+        I've seen the problem from the inside, and I build for it wherever it exists.
       </p>
     </div>
 

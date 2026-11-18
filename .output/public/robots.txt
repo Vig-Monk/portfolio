@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ludwigmaingi.vercel.app/sitemap.xml

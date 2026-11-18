@@ -17,7 +17,7 @@ const favoriteTools = [
 ];
 
 const currentlyLearning = [
-  "DSA, scoped to the ~20% of concepts that cover 80% of real-world use cases, anchored to Soko, Joy Agency, and Taskr as reference points instead of abstract problems.",
+  "DSA, scoped to the ~20% of concepts that cover 80% of real-world use cases, anchored to Soko, Flemela, and the Digital Product Suite as reference points instead of abstract problems.",
   "Distributed systems fundamentals, as Soko's multi-tenant architecture grows.",
   "OOP patterns in TypeScript, applied back into the Soko codebase as they land."
 ];

@@ -14,7 +14,14 @@ useHead({
   link: [{ rel: "canonical", href: "https://ludwigmaingi.vercel.app/projects" }]
 });
 
-const categories: ProjectCategory[] = ["SaaS", "Backend", "Full Stack"];
+const categories: ProjectCategory[] = [
+  "SaaS",
+  "Backend",
+  "Full Stack",
+  "E-commerce",
+  "Digital Products",
+  "Tooling"
+];
 const activeCategory = ref<ProjectCategory | "All">("All");
 
 const filtered = computed(() => {

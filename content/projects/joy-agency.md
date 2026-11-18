@@ -7,8 +7,8 @@ techStack: ["Vue 3", "Express", "MongoDB", "Cloudinary"]
 architectureHighlights: ["Admin dashboard", "Unsigned image uploads", "Dark mode theming"]
 githubUrl: ""
 demoUrl: ""
-featured: true
-order: 2
+featured: false
+order: 4
 ---
 
 ## Overview

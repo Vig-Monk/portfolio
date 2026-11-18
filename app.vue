@@ -22,9 +22,9 @@ useHead({
           "REST API Design",
           "Distributed Systems"
         ],
-        "nationality": {
-          "@type": "Country",
-          "name": "Kenya"
+        "location": {
+          "@type": "Place",
+          "name": "Remote — Worldwide"
         }
       })
     }

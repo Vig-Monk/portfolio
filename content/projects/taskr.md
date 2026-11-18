@@ -8,7 +8,7 @@ architectureHighlights: ["MEVN stack", "Deployed on Render & Vercel"]
 githubUrl: "https://github.com/Vig-Monk/express-api-fundamentals"
 demoUrl: ""
 featured: false
-order: 3
+order: 7
 ---
 
 ## Overview

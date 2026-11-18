@@ -72,6 +72,10 @@ export default defineNuxtConfig({
     prerender: {
       routes: [
         "/projects/soko-platform",
+        "/projects/flemela",
+        "/projects/digital-product-suite",
+        "/projects/zamari-surfaces",
+        "/projects/skills-library",
         "/projects/joy-agency",
         "/projects/taskr"
       ]
